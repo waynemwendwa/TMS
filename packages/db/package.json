@@ -3,7 +3,13 @@
   "private": true,
   "version": "0.0.1",
   "type": "module",
+  "main": "./dist/client.js",
+  "exports": {
+    ".": "./dist/client.js",
+    "./client": "./dist/client.js"
+  },
   "scripts": {
+    "build": "tsc",
     "generate": "prisma generate",
     "migrate": "prisma migrate dev",
     "studio": "prisma studio"
