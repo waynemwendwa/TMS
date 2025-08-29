@@ -4,6 +4,9 @@ import cors from 'cors';
 import morgan from 'morgan';
 import health from './routes/health';
 import projects from './routes/projects';
+import suppliers from './routes/suppliers';
+import parties from './routes/parties';
+import boq from './routes/boq';
 
 const app = express();
 app.use(cors());
@@ -12,6 +15,9 @@ app.use(morgan('dev'));
 
 app.use('/api', health);
 app.use('/api/projects', projects);
+app.use('/api/suppliers', suppliers);
+app.use('/api/parties', parties);
+app.use('/api/boq', boq);
 
 const port = Number(process.env.PORT) || 4000;
 app.listen(port, () => {
