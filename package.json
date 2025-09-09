@@ -6,8 +6,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm -w apps/web run dev",
-    "dev:api": "npm -w apps/api run dev",
+    "dev": "npm -w apps/web run dev && npm -w apps/api run dev",
     "build": "npm -ws run build",
     "lint": "npm -ws run lint",
     "format": "prettier -w ."
