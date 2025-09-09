@@ -23,3 +23,13 @@ coverage
 **/pnpm-lock.yaml
 docker-data
 docker-compose.yaml
+docker-compose.yml
+# Environment files
+.env.local
+.env.production
+.env.development
+# Credentials and secrets
+credentials.txt
+secrets.txt
+*.key
+*.pem
