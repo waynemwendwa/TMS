@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '@tms/db/client';
+import { requireAuth, requireRole } from '../../middleware/auth';
 
 const router = Router();
 
@@ -36,16 +37,64 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create new project
-router.post('/', async (req, res) => {
+router.post('/', requireAuth, requireRole('SITE_SUPERVISOR', 'CHAIRMAN', 'CHAIRMAN_PA'), async (req, res) => {
 	try {
-		const { name } = req.body;
+		const { 
+			title, 
+			description, 
+			startDate, 
+			endDate,
+			// Bio data
+			mainContractor,
+			client,
+			architect,
+			engineer,
+			quantitySurveyor,
+			structuralEngineer,
+			subcontractors,
+			lawFirm,
+			// Contact information
+			contractorContact,
+			clientContact,
+			architectContact,
+			engineerContact,
+			qsContact,
+			structuralContact,
+			subcontractorContact,
+			lawFirmContact
+		} = req.body;
 		
-		if (!name) {
-			return res.status(400).json({ error: 'Project name is required' });
+		if (!title) {
+			return res.status(400).json({ error: 'Project title is required' });
 		}
 		
+		const parsedStartDate = startDate ? new Date(startDate) : undefined;
+		const parsedEndDate = endDate ? new Date(endDate) : undefined;
+
 		const project = await prisma.project.create({
-			data: { name }
+			data: { 
+				title,
+				description: description ?? undefined,
+				startDate: parsedStartDate,
+				endDate: parsedEndDate,
+				mainContractor: mainContractor ?? undefined,
+				client: client ?? undefined,
+				architect: architect ?? undefined,
+				engineer: engineer ?? undefined,
+				quantitySurveyor: quantitySurveyor ?? undefined,
+				structuralEngineer: structuralEngineer ?? undefined,
+				subcontractors: subcontractors ?? undefined,
+				lawFirm: lawFirm ?? undefined,
+				contractorContact: contractorContact ?? undefined,
+				clientContact: clientContact ?? undefined,
+				architectContact: architectContact ?? undefined,
+				engineerContact: engineerContact ?? undefined,
+				qsContact: qsContact ?? undefined,
+				structuralContact: structuralContact ?? undefined,
+				subcontractorContact: subcontractorContact ?? undefined,
+				lawFirmContact: lawFirmContact ?? undefined,
+				createdBy: req.user!.id
+			}
 		});
 		
 		res.status(201).json(project);

@@ -46,7 +46,7 @@ router.get('/:id', async (req, res) => {
 // Create new BOQ
 router.post('/', async (req, res) => {
 	try {
-		const { name, version, isPriced, projectId, items } = req.body;
+		const { name, version, isPriced, projectId, items, documentPath, documentType, fileName } = req.body;
 		
 		if (!name || !projectId) {
 			return res.status(400).json({ error: 'Name and projectId are required' });
@@ -58,6 +58,9 @@ router.post('/', async (req, res) => {
 				version: version || '1.0',
 				isPriced: isPriced || false,
 				projectId,
+				documentPath,
+				documentType,
+				fileName,
 				items: {
 					create: items || []
 				}

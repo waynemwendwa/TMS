@@ -1,15 +1,25 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 interface Project {
   id: string;
-  name: string;
+  title: string;
   description?: string;
   status: string;
   startDate?: string;
   endDate?: string;
   createdAt: string;
+  // Enhanced project data
+  mainContractor?: string;
+  client?: string;
+  architect?: string;
+  engineer?: string;
+  quantitySurveyor?: string;
+  structuralEngineer?: string;
+  subcontractors?: string;
+  lawFirm?: string;
 }
 
 export default function ProjectsPage() {
@@ -17,10 +27,28 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newProject, setNewProject] = useState({
-    name: '',
+    title: '',
     description: '',
     startDate: '',
-    endDate: ''
+    endDate: '',
+    // Bio data
+    mainContractor: '',
+    client: '',
+    architect: '',
+    engineer: '',
+    quantitySurveyor: '',
+    structuralEngineer: '',
+    subcontractors: '',
+    lawFirm: '',
+    // Contact information
+    contractorContact: { poBox: '', address: '', phone: '', location: '', email: '' },
+    clientContact: { poBox: '', address: '', phone: '', location: '', email: '' },
+    architectContact: { poBox: '', address: '', phone: '', location: '', email: '' },
+    engineerContact: { poBox: '', address: '', phone: '', location: '', email: '' },
+    qsContact: { poBox: '', address: '', phone: '', location: '', email: '' },
+    structuralContact: { poBox: '', address: '', phone: '', location: '', email: '' },
+    subcontractorContact: { poBox: '', address: '', phone: '', location: '', email: '' },
+    lawFirmContact: { poBox: '', address: '', phone: '', location: '', email: '' }
   });
 
   useEffect(() => {
@@ -58,7 +86,28 @@ export default function ProjectsPage() {
       if (response.ok) {
         const createdProject = await response.json();
         setProjects([createdProject, ...projects]);
-        setNewProject({ name: '', description: '', startDate: '', endDate: '' });
+        setNewProject({
+          title: '',
+          description: '',
+          startDate: '',
+          endDate: '',
+          mainContractor: '',
+          client: '',
+          architect: '',
+          engineer: '',
+          quantitySurveyor: '',
+          structuralEngineer: '',
+          subcontractors: '',
+          lawFirm: '',
+          contractorContact: { poBox: '', address: '', phone: '', location: '', email: '' },
+          clientContact: { poBox: '', address: '', phone: '', location: '', email: '' },
+          architectContact: { poBox: '', address: '', phone: '', location: '', email: '' },
+          engineerContact: { poBox: '', address: '', phone: '', location: '', email: '' },
+          qsContact: { poBox: '', address: '', phone: '', location: '', email: '' },
+          structuralContact: { poBox: '', address: '', phone: '', location: '', email: '' },
+          subcontractorContact: { poBox: '', address: '', phone: '', location: '', email: '' },
+          lawFirmContact: { poBox: '', address: '', phone: '', location: '', email: '' }
+        });
         setShowCreateForm(false);
       }
     } catch (error) {
@@ -76,6 +125,41 @@ export default function ProjectsPage() {
     }
   };
 
+  const handleViewProject = (projectId: string) => {
+    // Navigate to project details page
+    window.location.href = `/projects/${projectId}`;
+  };
+
+  const handleEditProject = (projectId: string) => {
+    // Navigate to project edit page
+    window.location.href = `/projects/${projectId}/edit`;
+  };
+
+  const handleDeleteProject = async (projectId: string) => {
+    if (!confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('tms_token') : null;
+      const response = await fetch(`http://localhost:4000/api/projects/${projectId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        setProjects(projects.filter(project => project.id !== projectId));
+      } else {
+        alert('Failed to delete project');
+      }
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      alert('Error deleting project');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -89,12 +173,9 @@ export default function ProjectsPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
-        <button
-          onClick={() => setShowCreateForm(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-        >
+        <Link href="/projects/create" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
           Create New Project
-        </button>
+        </Link>
       </div>
 
       {/* Create Project Form */}
@@ -110,8 +191,8 @@ export default function ProjectsPage() {
                 <input
                   type="text"
                   required
-                  value={newProject.name}
-                  onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
+                  value={newProject.title}
+                  onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., KISUMU COUNTY ASSEMBLY PROJECT"
                 />
@@ -206,7 +287,7 @@ export default function ProjectsPage() {
                   <tr key={project.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
-                        <div className="text-sm font-medium text-gray-900">{project.name}</div>
+                        <div className="text-sm font-medium text-gray-900">{project.title}</div>
                         {project.description && (
                           <div className="text-sm text-gray-500">{project.description}</div>
                         )}
@@ -231,9 +312,24 @@ export default function ProjectsPage() {
                       {new Date(project.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button className="text-blue-600 hover:text-blue-900 mr-3">View</button>
-                      <button className="text-green-600 hover:text-green-900 mr-3">Edit</button>
-                      <button className="text-red-600 hover:text-red-900">Delete</button>
+                      <button 
+                        onClick={() => handleViewProject(project.id)}
+                        className="text-blue-600 hover:text-blue-900 mr-3"
+                      >
+                        View
+                      </button>
+                      <button 
+                        onClick={() => handleEditProject(project.id)}
+                        className="text-green-600 hover:text-green-900 mr-3"
+                      >
+                        Edit
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteProject(project.id)}
+                        className="text-red-600 hover:text-red-900"
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))}

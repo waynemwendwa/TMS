@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '@tms/db/client';
+import comparison from './comparison';
 
 const router = Router();
 
@@ -109,5 +110,8 @@ router.get('/:id/quotes', async (req, res) => {
 		res.status(500).json({ error: 'Failed to fetch supplier quotes' });
 	}
 });
+
+// Use comparison routes
+router.use('/comparison', comparison);
 
 export default router;
