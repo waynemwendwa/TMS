@@ -33,3 +33,5 @@ credentials.txt
 secrets.txt
 *.key
 *.pem
+docker.env
+docker-compose.yml
