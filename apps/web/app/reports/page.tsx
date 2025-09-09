@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 
 interface ReportData {
   id: string;
@@ -93,7 +92,7 @@ export default function ReportsPage() {
       const newReport: ReportData = {
         id: Date.now().toString(),
         title: `${selectedReportType} Report`,
-        type: selectedReportType as any,
+        type: selectedReportType as 'FINANCIAL' | 'PROCUREMENT' | 'INVENTORY' | 'SUPPLIER',
         description: `Generated report for ${selectedReportType.toLowerCase()}`,
         generatedAt: new Date().toISOString(),
         status: 'GENERATING'

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 
 // Office Document Interface
 interface OfficeDocument {
@@ -111,10 +110,6 @@ export default function InventoryPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [uploadingFiles, setUploadingFiles] = useState(false);
 
-  useEffect(() => {
-    fetchAllData();
-  }, []);
-
   const fetchAllData = async () => {
     setLoading(true);
     try {
@@ -130,6 +125,10 @@ export default function InventoryPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchAllData();
+  }, [fetchAllData]);
 
   const fetchOfficeDocuments = async () => {
    
@@ -344,34 +343,6 @@ export default function InventoryPage() {
     setShowOrderForm(false);
   };
 
-  const handleOrderDocumentUpload = async (orderId: string, files: FileList) => {
-    setUploadingFiles(true);
-    try {
-      const formData = new FormData();
-      Array.from(files).forEach(file => {
-        formData.append('documents', file);
-      });
-      formData.append('orderId', orderId);
-
-      const response = await fetch('http://localhost:4000/api/upload/order-documents', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        const uploadedDocs = await response.json();
-        setOrdersReceipts(prev => prev.map(order => 
-          order.id === orderId 
-            ? { ...order, documents: [...order.documents, ...uploadedDocs] }
-            : order
-        ));
-      }
-    } catch (error) {
-      console.error('Error uploading order documents:', error);
-    } finally {
-      setUploadingFiles(false);
-    }
-  };
 
   // Utility Functions
   const getFileIcon = (type: string) => {

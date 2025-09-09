@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 
 interface FileUploadProps {
   onUpload: (files: File[]) => void;
-  onUploadComplete: (results: any[]) => void;
+  onUploadComplete: (results: { id: string; success: boolean; message: string; name: string; size: number; url: string }[]) => void;
   accept?: string;
   multiple?: boolean;
   maxSize?: number; // in MB
@@ -26,7 +26,7 @@ export default function FileUpload({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [dragActive, setDragActive] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<{ id: string; success: boolean; message: string; name: string; size: number; url: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = async (files: FileList | null) => {
@@ -61,8 +61,16 @@ export default function FileUpload({
 
       if (response.ok) {
         const result = await response.json();
-        setUploadedFiles(prev => [...prev, result.file]);
-        onUploadComplete([result.file]);
+        const fileWithId = { 
+          id: Date.now().toString(), 
+          success: true,
+          message: 'Upload successful',
+          name: result.file?.name || 'Unknown file',
+          size: result.file?.size || 0,
+          url: result.file?.url || ''
+        };
+        setUploadedFiles(prev => [...prev, fileWithId]);
+        onUploadComplete([fileWithId]);
         setUploadProgress(100);
       } else {
         const error = await response.json();
@@ -227,6 +235,8 @@ export default function FileUpload({
     </div>
   );
 }
+
+
 
 
 

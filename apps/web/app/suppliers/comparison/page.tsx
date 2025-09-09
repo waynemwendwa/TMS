@@ -53,12 +53,6 @@ export default function SupplierComparisonPage() {
     fetchAvailableProducts();
   }, []);
 
-  useEffect(() => {
-    if (selectedProduct || (priceRange.min && priceRange.max)) {
-      fetchSupplierComparison();
-    }
-  }, [selectedProduct, priceRange, sortBy, sortOrder]);
-
   const fetchAvailableProducts = async () => {
     try {
       const response = await fetch('http://localhost:4000/api/suppliers/products');
@@ -96,6 +90,12 @@ export default function SupplierComparisonPage() {
     }
   };
 
+  useEffect(() => {
+    if (selectedProduct || (priceRange.min && priceRange.max)) {
+      fetchSupplierComparison();
+    }
+  }, [selectedProduct, priceRange, sortBy, sortOrder, fetchSupplierComparison]);
+
   const getRatingColor = (rating: number) => {
     if (rating >= 4) return 'text-green-600 bg-green-100';
     if (rating >= 3) return 'text-yellow-600 bg-yellow-100';
@@ -108,12 +108,6 @@ export default function SupplierComparisonPage() {
     return 'text-red-600';
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-KE', {
-      style: 'currency',
-      currency: 'KES',
-    }).format(amount);
-  };
 
   const formatPercentage = (value: number) => {
     return `${value.toFixed(1)}%`;
@@ -233,7 +227,7 @@ export default function SupplierComparisonPage() {
               <label className="text-sm font-medium text-gray-700">Sort by:</label>
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
+                onChange={(e) => setSortBy(e.target.value as 'score' | 'rating' | 'price' | 'response')}
                 className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="score">Overall Score</option>
@@ -243,7 +237,7 @@ export default function SupplierComparisonPage() {
               </select>
               <select
                 value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value as any)}
+                onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
                 className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="desc">Descending</option>

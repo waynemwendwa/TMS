@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import Link from 'next/link'
-import LogoutButton from './components/LogoutButton'
 import UserNav from './components/UserNav'
 import Image from 'next/image'
 

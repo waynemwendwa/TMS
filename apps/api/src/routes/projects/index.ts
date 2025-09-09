@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '@tms/db/client';
-import { requireAuth, requireRole } from '../../middleware/auth';
+import { requireAuth, requireRole } from '../../middleware/auth.js';
 
 const router = Router();
 
@@ -108,15 +108,15 @@ router.post('/', requireAuth, requireRole('SITE_SUPERVISOR', 'CHAIRMAN', 'CHAIRM
 router.put('/:id', async (req, res) => {
 	try {
 		const { id } = req.params;
-		const { name } = req.body;
+		const { title } = req.body;
 		
-		if (!name) {
-			return res.status(400).json({ error: 'Project name is required' });
+		if (!title) {
+			return res.status(400).json({ error: 'Project title is required' });
 		}
 		
 		const project = await prisma.project.update({
 			where: { id },
-			data: { name }
+			data: { title }
 		});
 		
 		res.json(project);

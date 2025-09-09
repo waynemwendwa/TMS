@@ -1,10 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 export default function SignupPage() {
-  const router = useRouter();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -56,8 +54,8 @@ export default function SignupPage() {
         // Force a page refresh to update the navigation
         window.location.href = '/';
       }
-    } catch (e: any) {
-      setError(e.message || 'Signup failed');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Signup failed');
     } finally {
       setLoading(false);
     }

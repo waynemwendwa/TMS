@@ -40,12 +40,6 @@ export default function ProcurementPage() {
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<string>('');
 
-  useEffect(() => {
-    if (selectedProject) {
-      fetchProcurementPlans();
-    }
-  }, [selectedProject]);
-
   const fetchProcurementPlans = async () => {
     try {
       const response = await fetch(`http://localhost:4000/api/procurement/project/${selectedProject}`);
@@ -59,6 +53,12 @@ export default function ProcurementPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (selectedProject) {
+      fetchProcurementPlans();
+    }
+  }, [selectedProject, fetchProcurementPlans]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -107,7 +107,7 @@ export default function ProcurementPage() {
       ) : procurementPlans.length === 0 ? (
         <div className="bg-white rounded-lg shadow-md p-8 text-center">
           <h2 className="text-xl font-semibold text-gray-900 mb-2">No Procurement Plans</h2>
-          <p className="text-gray-600 mb-4">This project doesn't have any procurement plans yet.</p>
+          <p className="text-gray-600 mb-4">This project doesn&apos;t have any procurement plans yet.</p>
           <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
             Create First Procurement Plan
           </button>
@@ -211,6 +211,8 @@ export default function ProcurementPage() {
     </div>
   );
 }
+
+
 
 
 

@@ -139,7 +139,7 @@ export default function SuppliersPage() {
       supplier.phone.includes(searchTerm)
     )
     .sort((a, b) => {
-      let aValue: any, bValue: any;
+      let aValue: string | number, bValue: string | number;
       
       switch (sortBy) {
         case 'name':
@@ -151,8 +151,8 @@ export default function SuppliersPage() {
           bValue = b.rating || 0;
           break;
         case 'createdAt':
-          aValue = new Date(a.createdAt);
-          bValue = new Date(b.createdAt);
+          aValue = new Date(a.createdAt).getTime();
+          bValue = new Date(b.createdAt).getTime();
           break;
         default:
           aValue = a.name.toLowerCase();
@@ -166,12 +166,6 @@ export default function SuppliersPage() {
       }
     });
 
-  const getRatingColor = (rating?: number) => {
-    if (!rating) return 'text-gray-400';
-    if (rating >= 4) return 'text-green-600';
-    if (rating >= 3) return 'text-yellow-600';
-    return 'text-red-600';
-  };
 
   if (loading) {
     return (
@@ -351,7 +345,7 @@ export default function SuppliersPage() {
           <div className="flex gap-2">
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
+              onChange={(e) => setSortBy(e.target.value as 'name' | 'rating' | 'createdAt')}
               className="px-3 text-gray-900 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="name">Sort by Name</option>
@@ -360,7 +354,7 @@ export default function SuppliersPage() {
             </select>
             <select
               value={sortOrder}
-              onChange={(e) => setSortOrder(e.target.value as any)}
+              onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
               className="px-3 py-2 text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="asc">Ascending</option>

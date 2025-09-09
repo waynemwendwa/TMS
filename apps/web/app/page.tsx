@@ -1,12 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import FinanceProcurementDashboard from "./components/FinanceProcurementDashboard";
 
 export default function Home() {
-  const [user, setUser] = useState<any | null>(null);
+  const [user, setUser] = useState<{ id: string; email: string; name: string; role: string } | null>(null);
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('tms_token') : null;
     async function fetchMe() {
@@ -147,7 +146,6 @@ export default function Home() {
 
 // Chairman Dashboard Component
 function ChairmanDashboard({ user }: { user: any }) {
-  const [projects, setProjects] = useState<any[]>([]);
   const [stats, setStats] = useState({
     activeProjects: 0,
     totalSuppliers: 0,
@@ -160,14 +158,6 @@ function ChairmanDashboard({ user }: { user: any }) {
     async function fetchData() {
       if (!token) return;
       try {
-        // Fetch projects
-        const projectsRes = await fetch('http://localhost:4000/api/projects', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (projectsRes.ok) {
-          const projectsData = await projectsRes.json();
-          setProjects(projectsData.projects);
-        }
 
         // Fetch dashboard stats
         const statsRes = await fetch('http://localhost:4000/api/dashboard/chairman', {

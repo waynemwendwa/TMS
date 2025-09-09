@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '@tms/db/client';
-import comparison from './comparison';
+import comparison from './comparison.js';
 
 const router = Router();
 

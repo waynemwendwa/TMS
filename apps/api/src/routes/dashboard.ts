@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '@tms/db/client';
-import { requireAuth } from '../middleware/auth';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -13,10 +13,10 @@ router.get('/chairman', requireAuth, async (req, res) => {
       pendingApprovals,
       activeOrders
     ] = await Promise.all([
-      prisma.project.count({ where: { status: { in: ['ACTIVE', 'IN_PROGRESS'] } } }),
+      prisma.project.count({ where: { status: { in: ['ACTIVE', 'PLANNING'] } } }),
       prisma.supplier.count({ where: { isActive: true } }),
       prisma.sampleApproval.count({ where: { status: 'PENDING' } }),
-      prisma.procurementItem.count({ where: { status: { in: ['ORDERED', 'IN_TRANSIT'] } } })
+      prisma.order.count({ where: { status: { in: ['APPROVED', 'IN_PROGRESS'] } } })
     ]);
 
     res.json({
@@ -41,11 +41,11 @@ router.get('/finance-procurement', requireAuth, async (req, res) => {
       totalBudget
     ] = await Promise.all([
       prisma.supplier.count({ where: { isActive: true } }),
-      prisma.procurementPlan.count({ where: { status: { in: ['ACTIVE', 'DRAFT'] } } }),
-      prisma.quote.count({ where: { status: 'PENDING' } }),
+      prisma.procurementPlan.count({ where: { status: { in: ['IN_PROGRESS', 'DRAFT'] } } }),
+      prisma.quote.count({ where: { status: 'SUBMITTED' } }),
       prisma.procurementItem.aggregate({
-        _sum: { estimatedCost: true },
-        where: { status: { in: ['PLANNED', 'ORDERED'] } }
+        _sum: { marketPrice: true },
+        where: { procurementPlan: { status: { in: ['IN_PROGRESS', 'DRAFT'] } } }
       })
     ]);
 
@@ -53,7 +53,7 @@ router.get('/finance-procurement', requireAuth, async (req, res) => {
       activeSuppliers,
       procurementPlans,
       pendingQuotes,
-      totalBudget: totalBudget._sum.estimatedCost || 0
+      totalBudget: totalBudget._sum?.marketPrice || 0
     });
   } catch (error) {
     console.error('Error fetching finance-procurement dashboard stats:', error);
@@ -74,13 +74,13 @@ router.get('/site-supervisor', requireAuth, async (req, res) => {
     ] = await Promise.all([
       prisma.project.count({ 
         where: { 
-          assignedSupervisorId: userId,
-          status: { in: ['ACTIVE', 'IN_PROGRESS'] }
+          createdBy: userId,
+          status: { in: ['ACTIVE', 'PLANNING'] }
         } 
       }),
-      prisma.inventoryItem.count(),
-      prisma.inventoryItem.count({ where: { quantity: { lte: 10 } } }),
-      prisma.inventoryItem.count({ where: { quantity: 0 } })
+      prisma.inventory.count(),
+      prisma.inventory.count({ where: { currentStock: { lte: 10 } } }),
+      prisma.inventory.count({ where: { currentStock: 0 } })
     ]);
 
     res.json({
