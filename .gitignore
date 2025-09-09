@@ -22,3 +22,4 @@ coverage
 **/yarn.lock
 **/pnpm-lock.yaml
 docker-data
+docker-compose.yaml
