@@ -21,6 +21,22 @@ export const initializeMinIO = async () => {
     } else {
       console.log(`✅ MinIO bucket '${BUCKET_NAME}' already exists`);
     }
+
+    // Set bucket policy to allow public read access
+    const bucketPolicy = {
+      Version: '2012-10-17',
+      Statement: [
+        {
+          Effect: 'Allow',
+          Principal: '*',
+          Action: 's3:GetObject',
+          Resource: `arn:aws:s3:::${BUCKET_NAME}/*`
+        }
+      ]
+    };
+
+    await minioClient.setBucketPolicy(BUCKET_NAME, JSON.stringify(bucketPolicy));
+    console.log(`✅ MinIO bucket '${BUCKET_NAME}' set to public read access`);
   } catch (error) {
     console.error('❌ Error initializing MinIO:', error);
   }
@@ -100,6 +116,7 @@ export const listFiles = async (folder: string = ''): Promise<string[]> => {
 };
 
 export default minioClient;
+
 
 
 

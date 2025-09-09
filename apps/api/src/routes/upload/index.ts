@@ -1,12 +1,12 @@
-import { Router } from 'express';
-import { uploadSingle, uploadMultiple, handleUploadError } from '../../middleware/upload';
-import { uploadFile, deleteFile, getFileUrl, listFiles } from '../../services/minio';
+import { Router, Request, Response } from 'express';
+import { uploadSingle, uploadMultiple, handleUploadError } from '../../middleware/upload.js';
+import { uploadFile, deleteFile, getFileUrl, listFiles } from '../../services/minio.js';
 import { prisma } from '@tms/db/client';
 
 const router = Router();
 
 // Upload single file (for BOQ documents)
-router.post('/single', uploadSingle('file'), handleUploadError, async (req, res) => {
+router.post('/single', uploadSingle('file'), handleUploadError, async (req: Request, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -60,7 +60,7 @@ router.post('/single', uploadSingle('file'), handleUploadError, async (req, res)
 });
 
 // Upload multiple files
-router.post('/multiple', uploadMultiple('files', 5), handleUploadError, async (req, res) => {
+router.post('/multiple', uploadMultiple('files', 5), handleUploadError, async (req: Request, res: Response) => {
   try {
     const files = req.files as Express.Multer.File[];
     
@@ -93,8 +93,25 @@ router.post('/multiple', uploadMultiple('files', 5), handleUploadError, async (r
   }
 });
 
+// Download file
+router.get('/download', async (req: Request, res: Response) => {
+  try {
+    const { filePath } = req.query;
+    
+    if (!filePath || typeof filePath !== 'string') {
+      return res.status(400).json({ error: 'File path is required' });
+    }
+    
+    const url = getFileUrl(filePath);
+    res.redirect(url);
+  } catch (error) {
+    console.error('Error getting download URL:', error);
+    res.status(500).json({ error: 'Failed to get download URL' });
+  }
+});
+
 // Delete file
-router.delete('/file', async (req, res) => {
+router.delete('/file', async (req: Request, res: Response) => {
   try {
     const { filePath } = req.body;
     
@@ -112,7 +129,7 @@ router.delete('/file', async (req, res) => {
 });
 
 // Get file URL
-router.get('/url', async (req, res) => {
+router.get('/url', async (req: Request, res: Response) => {
   try {
     const { filePath } = req.query;
     
@@ -130,7 +147,7 @@ router.get('/url', async (req, res) => {
 });
 
 // List files in a folder
-router.get('/list', async (req, res) => {
+router.get('/list', async (req: Request, res: Response) => {
   try {
     const { folder = '' } = req.query;
     const files = await listFiles(folder as string);
@@ -142,8 +159,44 @@ router.get('/list', async (req, res) => {
   }
 });
 
+// Get office documents
+router.get('/office-documents', async (req: Request, res: Response) => {
+  try {
+    const files = await listFiles('office-documents');
+    
+    const documents = files.map(filePath => {
+      const fileName = filePath.split('/').pop() || '';
+      const fileExtension = fileName.split('.').pop()?.toLowerCase() || '';
+      
+      return {
+        id: filePath,
+        name: fileName,
+        description: '',
+        category: 'OTHER' as const,
+        type: (fileExtension === 'pdf' ? 'pdf' : 
+               fileExtension === 'doc' ? 'doc' :
+               fileExtension === 'docx' ? 'docx' :
+               fileExtension === 'jpg' ? 'jpg' :
+               fileExtension === 'jpeg' ? 'jpeg' :
+               fileExtension === 'png' ? 'png' : 'pdf') as any,
+        size: 0, // We don't have size info from listFiles
+        url: getFileUrl(filePath),
+        file_path: filePath,
+        uploadedBy: 'System',
+        uploadedAt: new Date().toISOString(),
+        tags: []
+      };
+    });
+    
+    res.json(documents);
+  } catch (error) {
+    console.error('Error fetching office documents:', error);
+    res.status(500).json({ error: 'Failed to fetch office documents' });
+  }
+});
+
 // Upload BOQ documents specifically
-router.post('/boq', uploadMultiple('boqFiles', 2), handleUploadError, async (req, res) => {
+router.post('/boq', uploadMultiple('boqFiles', 2), handleUploadError, async (req: Request, res: Response) => {
   try {
     const files = req.files as Express.Multer.File[];
     const { projectId, boqType } = req.body; // 'priced' or 'unpriced'
@@ -189,7 +242,7 @@ router.post(
   '/office-documents',
   uploadMultiple('documents', 10), // 'documents' matches your frontend FormData key
   handleUploadError,
-  async (req, res) => {
+  async (req: Request, res: Response) => {
     try {
       const files = req.files as Express.Multer.File[];
       const { name, description, category, tags } = req.body;

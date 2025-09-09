@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '@tms/db/client';
-import { signToken } from '../services/auth';
-import { requireAuth } from '../middleware/auth';
+import { signToken } from '../services/auth.js';
+import { requireAuth } from '../middleware/auth.js';
 import bcrypt from 'bcryptjs';
 
 const router = Router();

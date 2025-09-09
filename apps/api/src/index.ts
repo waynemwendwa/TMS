@@ -2,21 +2,26 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
-import health from './routes/health';
-import projects from './routes/projects';
-import suppliers from './routes/suppliers';
-import parties from './routes/parties';
-import boq from './routes/boq';
-import procurement from './routes/procurement';
-import upload from './routes/upload';
-import auth from './routes/auth';
-import dashboard from './routes/dashboard';
-import { initializeMinIO } from './services/minio';
+import health from './routes/health.js';
+import projects from './routes/projects/index.js';
+import suppliers from './routes/suppliers/index.js';
+import parties from './routes/parties/index.js';
+import boq from './routes/boq/index.js';
+import procurement from './routes/procurement/index.js';
+import upload from './routes/upload/index.js';
+import auth from './routes/auth.js';
+import dashboard from './routes/dashboard.js';
+import { initializeMinIO } from './services/minio.js';
 
 const app = express();
-app.use(cors());
+app.use(cors({
+	origin: process.env.NODE_ENV === 'production' 
+		? ['https://contempeng.online', 'https://contempeng.online']
+		: ['http://localhost:3000', 'http://localhost:3001'],
+	credentials: true
+  }));
 app.use(express.json());
-app.use(morgan('dev'));
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 app.use('/api', health);
 app.use('/api/projects', projects);
@@ -32,6 +37,9 @@ app.use('/api/dashboard', dashboard);
 initializeMinIO();
 
 const port = Number(process.env.PORT) || 4000;
-app.listen(port, () => {
-	console.log(`API listening on http://localhost:${port}`);
+const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
+
+app.listen(port, host, () => {
+	console.log(`🚀 API server running on ${host}:${port}`);
+	console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
 });

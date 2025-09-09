@@ -132,36 +132,9 @@ export default function InventoryPage() {
   };
 
   const fetchOfficeDocuments = async () => {
-    // Mock data - replace with actual API call
-    // const mockDocuments: OfficeDocument[] = [
-    //   {
-    //     id: '1',
-    //     name: 'Company Policy Manual 2024',
-    //     description: 'Updated company policies and procedures',
-    //     category: 'POLICIES',
-    //     type: 'pdf',
-    //     size: 2048000,
-    //     url: '/documents/policy-manual-2024.pdf',
-    //     uploadedBy: 'Admin User',
-    //     uploadedAt: '2024-01-15T10:30:00Z',
-    //     tags: ['policy', 'manual', '2024']
-    //   },
-    //   {
-    //     id: '2',
-    //     name: 'Project Contract Template',
-    //     description: 'Standard contract template for new projects',
-    //     category: 'TEMPLATES',
-    //     type: 'docx',
-    //     size: 512000,
-    //     url: '/documents/contract-template.docx',
-    //     uploadedBy: 'Legal Team',
-    //     uploadedAt: '2024-01-14T14:20:00Z',
-    //     tags: ['contract', 'template', 'legal']
-    //   }
-    // ];
-    // setOfficeDocuments(mockDocuments);
+   
       try {
-    const response = await fetch('http://localhost:4000/api/office-documents');
+    const response = await fetch('http://localhost:4000/api/upload/office-documents');
     if (!response.ok) {
       throw new Error('Failed to fetch office documents');
     }
@@ -297,18 +270,22 @@ export default function InventoryPage() {
   };
 
   const openForView = (doc: OfficeDocument) => {
-    const url = `http://localhost:4000/${doc.file_path}`
-    window.open(url, '_blank', 'noopener')
+    const url = `http://localhost:4000/api/upload/download?filePath=${encodeURIComponent(doc.file_path)}`;
+    window.open(url, '_blank', 'noopener');
   }
 
-  const handleDocumentDelete = async (documentId: string) => {
+  const handleDocumentDelete = async (doc: OfficeDocument) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/upload/office-documents/${documentId}`, {
+      const response = await fetch('http://localhost:4000/api/upload/file', {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ filePath: doc.file_path }),
       });
 
       if (response.ok) {
-        setOfficeDocuments(prev => prev.filter(doc => doc.id !== documentId));
+        setOfficeDocuments(prev => prev.filter(d => d.id !== doc.id));
       }
     } catch (error) {
       console.error('Error deleting document:', error);
@@ -536,19 +513,19 @@ export default function InventoryPage() {
           </div>
 
           {/* Documents Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
             {filteredDocuments.map((doc) => (
-              <div key={doc.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-2xl">{getFileIcon(doc.type)}</span>
-                    <div>
+              <div key={doc.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow min-h-0 overflow-hidden flex flex-col">
+                <div className="flex items-start justify-between mb-4 min-h-0">
+                  <div className="flex items-center space-x-2 min-w-0 flex-1">
+                    <span className="text-2xl flex-shrink-0">{getFileIcon(doc.type)}</span>
+                    <div className="min-w-0 flex-1">
                       <h3 className="font-medium text-gray-900 truncate">{doc.name}</h3>
-                      <p className="text-sm text-gray-500">{doc.category}</p>
+                      <p className="text-sm text-gray-500 truncate">{doc.category}</p>
                     </div>
                   </div>
                   <button
-                    onClick={() => handleDocumentDelete(doc.id)}
+                    onClick={() => handleDocumentDelete(doc)}
                     className="text-red-500 hover:text-red-700"
                   >
                     🗑️
@@ -556,7 +533,7 @@ export default function InventoryPage() {
                 </div>
                 
                 {doc.description && (
-                  <p className="text-sm text-gray-600 mb-3">{doc.description}</p>
+                  <p className="text-sm text-gray-600 mb-3 line-clamp-2 overflow-hidden">{doc.description}</p>
                 )}
                 
                 <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
@@ -564,34 +541,39 @@ export default function InventoryPage() {
                   <span>{new Date(doc.uploadedAt).toLocaleDateString()}</span>
                 </div>
                 
-                <div className="flex space-x-2">
+                <div className="flex space-x-2 mt-auto">
                   <button
                     // onClick={() => window.open(doc.url, '_blank')}
                     onClick={() => openForView(doc)}
-                    className="flex-1 bg-blue-100 text-blue-700 px-3 py-2 rounded text-sm hover:bg-blue-200 transition-colors"
+                    className="flex-1 bg-blue-100 text-blue-700 px-3 py-2 rounded text-sm hover:bg-blue-200 transition-colors whitespace-nowrap"
                   >
                     View
                   </button>
                   <button
                     onClick={() => {
                       const link = document.createElement('a');
-                      link.href = doc.url;
+                      link.href = `http://localhost:4000/api/upload/download?filePath=${encodeURIComponent(doc.file_path)}`;
                       link.download = doc.name;
                       link.click();
                     }}
-                    className="flex-1 bg-green-100 text-green-700 px-3 py-2 rounded text-sm hover:bg-green-200 transition-colors"
+                    className="flex-1 bg-green-100 text-green-700 px-3 py-2 rounded text-sm hover:bg-green-200 transition-colors whitespace-nowrap"
                   >
                     Download
                   </button>
                 </div>
                 
                 {doc.tags && doc.tags.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-1">
-                    {doc.tags.map((tag, index) => (
-                      <span key={index} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                  <div className="mt-3 flex flex-wrap gap-1 max-h-16 overflow-hidden">
+                    {doc.tags.slice(0, 3).map((tag, index) => (
+                      <span key={index} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded truncate">
                         {tag}
                       </span>
                     ))}
+                    {doc.tags.length > 3 && (
+                      <span className="px-2 py-1 bg-gray-200 text-gray-500 text-xs rounded">
+                        +{doc.tags.length - 3} more
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
