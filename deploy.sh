@@ -5,6 +5,8 @@ echo "🚀 Deploying TMS Application..."
 # Check if we're in the right directory
 if [ ! -f "package.json" ]; then
     echo "❌ Error: Not in TMS root directory"
+    echo "Current directory: $(pwd)"
+    echo "Expected: /root/TMS"
     exit 1
 fi
 
@@ -22,7 +24,7 @@ npm run build
 
 # Run database migrations
 echo "🗄️ Running database migrations..."
-cd apps/api
+cd packages/db
 npx prisma migrate deploy
 npx prisma generate
 cd ../..
