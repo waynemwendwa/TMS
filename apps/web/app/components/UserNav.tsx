@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { getApiUrl } from '../../lib/config';
 import LogoutButton from './LogoutButton';
 
 interface User {
@@ -24,7 +25,7 @@ export default function UserNav() {
         return;
       }
       try {
-        const res = await fetch('http://localhost:4000/api/auth/me', {
+        const res = await fetch(getApiUrl('/api/auth/me'), {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.ok) {

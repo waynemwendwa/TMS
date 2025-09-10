@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getApiUrl } from '../../lib/config';
 import Link from 'next/link';
 
 interface Supplier {
@@ -41,7 +42,7 @@ export default function SuppliersPage() {
 
   const fetchSuppliers = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/suppliers');
+      const response = await fetch('getApiUrl('/api')/suppliers');
       if (response.ok) {
         const data = await response.json();
         setSuppliers(data);
@@ -56,7 +57,7 @@ export default function SuppliersPage() {
   const handleCreateSupplier = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:4000/api/suppliers', {
+      const response = await fetch('getApiUrl('/api')/suppliers', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -88,7 +89,7 @@ export default function SuppliersPage() {
     if (!confirm('Are you sure you want to delete this supplier?')) return;
     
     try {
-      const response = await fetch(`http://localhost:4000/api/suppliers/${id}`, {
+      const response = await fetch(`getApiUrl('/api')/suppliers/${id}`, {
         method: 'DELETE',
       });
 
@@ -113,7 +114,7 @@ export default function SuppliersPage() {
   const handleUpdateRating = async (supplierId: string, newRating: number) => {
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('tms_token') : null;
-      const response = await fetch(`http://localhost:4000/api/suppliers/${supplierId}`, {
+      const response = await fetch(`getApiUrl('/api')/suppliers/${supplierId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

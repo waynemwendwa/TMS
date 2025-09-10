@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { getApiUrl } from '../../lib/config';
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
@@ -32,7 +33,7 @@ export default function SignupPage() {
     }
 
     try {
-      const res = await fetch('http://localhost:4000/api/auth/signup', {
+      const res = await fetch(getApiUrl('/api/auth/signup'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

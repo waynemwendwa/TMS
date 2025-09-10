@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { getApiUrl } from '../../lib/config';
 
 interface ContactInfo {
   poBox: string;
@@ -69,7 +70,7 @@ export default function CreateProjectPage() {
         return;
       }
 
-      const response = await fetch('http://localhost:4000/api/projects', {
+      const response = await fetch(getApiUrl('/api/projects'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -88,7 +89,7 @@ export default function CreateProjectPage() {
           fd.append('boqFiles', pricedBoqFile);
           fd.append('projectId', project.id);
           fd.append('boqType', 'priced');
-          uploadPromises.push(fetch('http://localhost:4000/api/upload/boq', { method: 'POST', body: fd }));
+          uploadPromises.push(fetch(getApiUrl('/api/upload/boq'), { method: 'POST', body: fd }));
         }
 
         if (unpricedBoqFile) {
@@ -96,7 +97,7 @@ export default function CreateProjectPage() {
           fd.append('boqFiles', unpricedBoqFile);
           fd.append('projectId', project.id);
           fd.append('boqType', 'unpriced');
-          uploadPromises.push(fetch('http://localhost:4000/api/upload/boq', { method: 'POST', body: fd }));
+          uploadPromises.push(fetch(getApiUrl('/api/upload/boq'), { method: 'POST', body: fd }));
         }
 
         if (uploadPromises.length > 0) {

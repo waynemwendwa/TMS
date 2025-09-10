@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { getApiUrl } from '../lib/config';
 
 interface FileUploadProps {
   onUpload: (files: File[]) => void;
@@ -54,7 +55,7 @@ export default function FileUpload({
       if (folder) formData.append('folder', folder);
       if (projectId) formData.append('projectId', projectId);
 
-      const response = await fetch('http://localhost:4000/api/upload/single', {
+      const response = await fetch(getApiUrl('/api/upload/single'), {
         method: 'POST',
         body: formData,
       });

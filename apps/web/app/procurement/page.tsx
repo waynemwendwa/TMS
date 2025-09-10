@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getApiUrl } from '../../lib/config';
 import Link from 'next/link';
 
 interface ProcurementPlan {
@@ -42,7 +43,7 @@ export default function ProcurementPage() {
 
   const fetchProcurementPlans = async () => {
     try {
-      const response = await fetch(`http://localhost:4000/api/procurement/project/${selectedProject}`);
+      const response = await fetch(`getApiUrl('/api')/procurement/project/${selectedProject}`);
       if (response.ok) {
         const plans = await response.json();
         setProcurementPlans(plans);

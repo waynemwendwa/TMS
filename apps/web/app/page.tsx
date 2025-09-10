@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import FinanceProcurementDashboard from "./components/FinanceProcurementDashboard";
+import { getApiUrl } from "../lib/config";
 
 export default function Home() {
   const [user, setUser] = useState<{ id: string; email: string; name: string; role: string } | null>(null);
@@ -11,7 +12,7 @@ export default function Home() {
     async function fetchMe() {
       if (!token) return;
       try {
-        const res = await fetch('http://localhost:4000/api/auth/me', {
+        const res = await fetch(getApiUrl('/api/auth/me'), {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.ok) {
@@ -160,7 +161,7 @@ function ChairmanDashboard({ user }: { user: any }) {
       try {
 
         // Fetch dashboard stats
-        const statsRes = await fetch('http://localhost:4000/api/dashboard/chairman', {
+        const statsRes = await fetch(getApiUrl('/api/dashboard/chairman'), {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (statsRes.ok) {
@@ -280,7 +281,7 @@ function SiteSupervisorDashboard({ user }: { user: any }) {
     async function fetchStats() {
       if (!token) return;
       try {
-        const res = await fetch('http://localhost:4000/api/dashboard/site-supervisor', {
+        const res = await fetch(getApiUrl('/api/dashboard/site-supervisor'), {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.ok) {

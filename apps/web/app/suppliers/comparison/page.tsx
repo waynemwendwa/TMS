@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getApiUrl } from '../../lib/config';
 import Link from 'next/link';
 
 interface SupplierComparison {
@@ -55,7 +56,7 @@ export default function SupplierComparisonPage() {
 
   const fetchAvailableProducts = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/suppliers/products');
+      const response = await fetch('getApiUrl('/api')/suppliers/products');
       if (response.ok) {
         const data = await response.json();
         setAvailableProducts(data);
@@ -76,7 +77,7 @@ export default function SupplierComparisonPage() {
       params.append('order', sortOrder);
 
       const response = await fetch(
-        `http://localhost:4000/api/suppliers/comparison?${params.toString()}`
+        `getApiUrl('/api')/suppliers/comparison?${params.toString()}`
       );
       if (response.ok) {
         const data = await response.json();

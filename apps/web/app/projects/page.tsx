@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { getApiUrl } from '../../lib/config';
 
 interface Project {
   id: string;
@@ -57,7 +58,7 @@ export default function ProjectsPage() {
 
   const fetchProjects = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/projects');
+      const response = await fetch('getApiUrl('/api')/projects');
       if (response.ok) {
         const data = await response.json();
         setProjects(data);
@@ -72,7 +73,7 @@ export default function ProjectsPage() {
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:4000/api/projects', {
+      const response = await fetch('getApiUrl('/api')/projects', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -142,7 +143,7 @@ export default function ProjectsPage() {
 
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('tms_token') : null;
-      const response = await fetch(`http://localhost:4000/api/projects/${projectId}`, {
+      const response = await fetch(`getApiUrl('/api')/projects/${projectId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { getApiUrl } from '../../lib/config';
 
 interface User {
   id: string;
@@ -25,7 +26,7 @@ export default function FinanceProcurementDashboard({ user }: FinanceProcurement
     async function fetchStats() {
       if (!token) return;
       try {
-        const res = await fetch('http://localhost:4000/api/dashboard/finance-procurement', {
+        const res = await fetch('getApiUrl('/api')/dashboard/finance-procurement', {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.ok) {

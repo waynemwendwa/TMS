@@ -37,7 +37,7 @@ app.use('/api/dashboard', dashboard);
 initializeMinIO();
 
 const port = Number(process.env.PORT) || 4000;
-const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
+const host = '0.0.0.0';
 
 app.listen(port, host, () => {
 	console.log(`🚀 API server running on ${host}:${port}`);
