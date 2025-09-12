@@ -8,7 +8,8 @@ The build failures on Render have been fixed by updating the build process to pr
 
 1. **Updated package.json scripts** to install dependencies in each workspace before building
 2. **Updated render.yaml** to use the corrected build commands
-3. **Ensured proper dependency installation** for both API and Web services
+3. **Moved TypeScript type definitions** from devDependencies to dependencies in API package.json
+4. **Ensured proper dependency installation** for both API and Web services
 
 ## 📋 **Updated Build Commands**
 
