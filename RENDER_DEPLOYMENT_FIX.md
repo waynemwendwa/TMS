@@ -9,7 +9,8 @@ The build failures on Render have been fixed by updating the build process to pr
 1. **Updated package.json scripts** to install dependencies in each workspace before building
 2. **Updated render.yaml** to use the corrected build commands
 3. **Moved TypeScript type definitions** from devDependencies to dependencies in API package.json
-4. **Ensured proper dependency installation** for both API and Web services
+4. **Disabled Turbopack** for production builds (causing build failures on Render)
+5. **Ensured proper dependency installation** for both API and Web services
 
 ## 📋 **Updated Build Commands**
 
@@ -22,6 +23,7 @@ npm install && npm run build:db && cd apps/api && npm install && npm run build
 ```bash
 npm install && npm run build:db && cd apps/web && npm install && npm run build
 ```
+*Note: Turbopack disabled for production builds to prevent Render build failures*
 
 ## 🚀 **Next Steps to Deploy**
 
