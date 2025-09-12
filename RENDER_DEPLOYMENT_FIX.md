@@ -11,8 +11,9 @@ The build failures on Render have been fixed by updating the build process to pr
 3. **Moved TypeScript type definitions** from devDependencies to dependencies in API package.json
 4. **Moved Tailwind CSS dependencies** from devDependencies to dependencies in Web package.json
 5. **Moved ESLint and TypeScript dependencies** from devDependencies to dependencies in Web package.json
-6. **Disabled Turbopack** for production builds (causing build failures on Render)
-7. **Ensured proper dependency installation** for both API and Web services
+6. **Fixed port configuration** for web service (port 3000 instead of 10000)
+7. **Disabled Turbopack** for production builds (causing build failures on Render)
+8. **Ensured proper dependency installation** for both API and Web services
 
 ## 📋 **Updated Build Commands**
 
@@ -27,6 +28,7 @@ npm install && npm run build:db && cd apps/web && npm install && npm run build
 ```
 *Note: Turbopack disabled for production builds to prevent Render build failures*
 *Note: All build dependencies (Tailwind CSS, ESLint, TypeScript) moved to production dependencies*
+*Note: Web service configured to run on port 3000 (not 10000)*
 
 ## 🚀 **Next Steps to Deploy**
 

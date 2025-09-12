@@ -36,12 +36,12 @@ services:
     plan: starter
     region: oregon
     buildCommand: npm run build:web
-    startCommand: cd apps/web && npm start
+    startCommand: cd apps/web && PORT=3000 npm start
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 10000
+        value: 3000
       - key: NEXT_PUBLIC_API_URL
         fromService:
           type: web
