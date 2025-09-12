@@ -30,6 +30,8 @@ cd ../..
 echo "🔨 Building API package..."
 cd apps/api
 npm install
+# Ensure all dependencies are available
+npm install express cors morgan multer bcryptjs jsonwebtoken dotenv @types/express @types/cors @types/morgan @types/multer @types/bcryptjs @types/jsonwebtoken @types/node
 npm run build
 cd ../..
 
