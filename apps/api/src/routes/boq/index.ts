@@ -1,10 +1,10 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { prisma } from '@tms/db/client';
 
 const router = Router();
 
 // Get all BOQs for a project
-router.get('/project/:projectId', async (req, res) => {
+router.get('/project/:projectId', async (req: Request, res: Response) => {
 	try {
 		const { projectId } = req.params;
 		const boqs = await prisma.bOQ.findMany({
@@ -22,7 +22,7 @@ router.get('/project/:projectId', async (req, res) => {
 });
 
 // Get BOQ by ID with items
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
 		const boq = await prisma.bOQ.findUnique({
@@ -44,7 +44,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create new BOQ
-router.post('/', async (req, res) => {
+router.post('/', async (req: Request, res: Response) => {
 	try {
 		const { name, version, isPriced, projectId, items, documentPath, documentType, fileName } = req.body;
 		
@@ -78,7 +78,7 @@ router.post('/', async (req, res) => {
 });
 
 // Update BOQ
-router.put('/:id', async (req, res) => {
+router.put('/:id', async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
 		const { name, version, isPriced } = req.body;
@@ -100,7 +100,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete BOQ
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
 		await prisma.bOQ.delete({
@@ -115,7 +115,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 // Add item to BOQ
-router.post('/:id/items', async (req, res) => {
+router.post('/:id/items', async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
 		const { itemCode, description, unit, quantity, unitPrice, remarks } = req.body;
@@ -144,7 +144,7 @@ router.post('/:id/items', async (req, res) => {
 });
 
 // Update BOQ item
-router.put('/items/:itemId', async (req, res) => {
+router.put('/items/:itemId', async (req: Request, res: Response) => {
 	try {
 		const { itemId } = req.params;
 		const { itemCode, description, unit, quantity, unitPrice, remarks } = req.body;
@@ -173,7 +173,7 @@ router.put('/items/:itemId', async (req, res) => {
 });
 
 // Delete BOQ item
-router.delete('/items/:itemId', async (req, res) => {
+router.delete('/items/:itemId', async (req: Request, res: Response) => {
 	try {
 		const { itemId } = req.params;
 		await prisma.bOQItem.delete({

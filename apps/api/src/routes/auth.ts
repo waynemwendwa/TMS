@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { prisma } from '@tms/db/client';
 import { signToken } from '../services/auth.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -7,7 +7,7 @@ import bcrypt from 'bcryptjs';
 const router = Router();
 
 // Simple login by email only (for dev/demo). In production, add password hashing & checks
-router.post('/login', async (req, res) => {
+router.post('/login', async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -35,7 +35,7 @@ router.post('/login', async (req, res) => {
 });
 
 // Simple signup (dev/demo): create user by email, name, role
-router.post('/signup', async (req, res) => {
+router.post('/signup', async (req: Request, res: Response) => {
   try {
     const { email, name, role, password } = req.body;
     if (!email || !name || !role || !password) {
@@ -61,7 +61,7 @@ router.post('/signup', async (req, res) => {
 });
 
 // Get current user from token
-router.get('/me', requireAuth, async (req, res) => {
+router.get('/me', requireAuth, async (req: Request, res: Response) => {
   try {
     const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
     if (!user) {
