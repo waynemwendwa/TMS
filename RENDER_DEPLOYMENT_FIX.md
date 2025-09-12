@@ -10,8 +10,9 @@ The build failures on Render have been fixed by updating the build process to pr
 2. **Updated render.yaml** to use the corrected build commands
 3. **Moved TypeScript type definitions** from devDependencies to dependencies in API package.json
 4. **Moved Tailwind CSS dependencies** from devDependencies to dependencies in Web package.json
-5. **Disabled Turbopack** for production builds (causing build failures on Render)
-6. **Ensured proper dependency installation** for both API and Web services
+5. **Moved ESLint and TypeScript dependencies** from devDependencies to dependencies in Web package.json
+6. **Disabled Turbopack** for production builds (causing build failures on Render)
+7. **Ensured proper dependency installation** for both API and Web services
 
 ## 📋 **Updated Build Commands**
 
@@ -25,7 +26,7 @@ npm install && npm run build:db && cd apps/api && npm install && npm run build
 npm install && npm run build:db && cd apps/web && npm install && npm run build
 ```
 *Note: Turbopack disabled for production builds to prevent Render build failures*
-*Note: Tailwind CSS dependencies moved to production dependencies*
+*Note: All build dependencies (Tailwind CSS, ESLint, TypeScript) moved to production dependencies*
 
 ## 🚀 **Next Steps to Deploy**
 
