@@ -15,6 +15,7 @@
     "build:api": "npm -w apps/api run build",
     "build:web": "npm -w apps/web run build",
     "build:db": "npm -w packages/db run build",
+    "migrate": "cd ../../packages/db && npx prisma migrate deploy && npx prisma generate",
     "lint": "npm -ws run lint",
     "format": "prettier -w .",
     "install:all": "npm install && npm -ws run install"
