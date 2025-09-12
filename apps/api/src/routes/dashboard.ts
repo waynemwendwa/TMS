@@ -1,11 +1,11 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { prisma } from '@tms/db/client';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 
 // Get dashboard statistics for Chairman
-router.get('/chairman', requireAuth, async (req, res) => {
+router.get('/chairman', requireAuth, async (req: Request, res: Response) => {
   try {
     const [
       activeProjects,
@@ -32,7 +32,7 @@ router.get('/chairman', requireAuth, async (req, res) => {
 });
 
 // Get dashboard statistics for Finance & Procurement
-router.get('/finance-procurement', requireAuth, async (req, res) => {
+router.get('/finance-procurement', requireAuth, async (req: Request, res: Response) => {
   try {
     const [
       activeSuppliers,
@@ -62,7 +62,7 @@ router.get('/finance-procurement', requireAuth, async (req, res) => {
 });
 
 // Get dashboard statistics for Site Supervisor
-router.get('/site-supervisor', requireAuth, async (req, res) => {
+router.get('/site-supervisor', requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
     

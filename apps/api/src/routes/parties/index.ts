@@ -1,10 +1,10 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { prisma } from '@tms/db/client';
 
 const router = Router();
 
 // Get all parties for a project
-router.get('/project/:projectId', async (req, res) => {
+router.get('/project/:projectId', async (req: Request, res: Response) => {
 	try {
 		const { projectId } = req.params;
 		const parties = await prisma.party.findMany({
@@ -19,7 +19,7 @@ router.get('/project/:projectId', async (req, res) => {
 });
 
 // Get party by ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
 		const party = await prisma.party.findUnique({
@@ -38,7 +38,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create new party
-router.post('/', async (req, res) => {
+router.post('/', async (req: Request, res: Response) => {
 	try {
 		const { name, type, email, phone, poBox, address, website, taxNumber, projectId } = req.body;
 		
@@ -58,7 +58,7 @@ router.post('/', async (req, res) => {
 });
 
 // Update party
-router.put('/:id', async (req, res) => {
+router.put('/:id', async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
 		const { name, type, email, phone, poBox, address, website, taxNumber } = req.body;
@@ -80,7 +80,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete party
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
 		await prisma.party.delete({
@@ -95,7 +95,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 // Get parties by type for a project
-router.get('/project/:projectId/type/:type', async (req, res) => {
+router.get('/project/:projectId/type/:type', async (req: Request, res: Response) => {
 	try {
 		const { projectId, type } = req.params;
 		const parties = await prisma.party.findMany({
