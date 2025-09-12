@@ -1,10 +1,10 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { prisma } from '@tms/db/client';
 
 const router = Router();
 
 // Get supplier comparison for a specific project
-router.get('/project/:projectId', async (req, res) => {
+router.get('/project/:projectId', async (req: Request, res: Response) => {
   try {
     const { projectId } = req.params;
     const { category, sortBy = 'rating', order = 'desc' } = req.query;
@@ -55,12 +55,12 @@ router.get('/project/:projectId', async (req, res) => {
       
       // Calculate average quote amount
       const avgQuoteAmount = quotes.length > 0 
-        ? quotes.reduce((sum, quote) => sum + Number(quote.totalAmount), 0) / quotes.length
+        ? quotes.reduce((sum: number, quote: any) => sum + Number(quote.totalAmount), 0) / quotes.length
         : 0;
       
       // Calculate average market price
       const avgMarketPrice = marketItems.length > 0
-        ? marketItems.reduce((sum, item) => sum + Number(item.marketPrice), 0) / marketItems.length
+        ? marketItems.reduce((sum: number, item: any) => sum + Number(item.marketPrice), 0) / marketItems.length
         : 0;
       
       // Calculate price competitiveness (lower is better)
@@ -111,7 +111,7 @@ router.get('/project/:projectId', async (req, res) => {
     });
 
     // Sort suppliers based on sortBy parameter
-    const sortedComparison = comparison.sort((a, b) => {
+    const sortedComparison = comparison.sort((a: any, b: any) => {
       let aValue, bValue;
       
       switch (sortBy) {
@@ -144,10 +144,10 @@ router.get('/project/:projectId', async (req, res) => {
       totalSuppliers: sortedComparison.length,
       comparison: sortedComparison,
       summary: {
-        avgRating: comparison.reduce((sum, s) => sum + s.rating, 0) / comparison.length,
-        avgPriceCompetitiveness: comparison.reduce((sum, s) => sum + s.metrics.priceCompetitiveness, 0) / comparison.length,
-        avgResponseRate: comparison.reduce((sum, s) => sum + s.metrics.responseRate, 0) / comparison.length,
-        recommendedCount: comparison.filter(s => s.isRecommended).length
+        avgRating: comparison.reduce((sum: number, s: any) => sum + s.rating, 0) / comparison.length,
+        avgPriceCompetitiveness: comparison.reduce((sum: number, s: any) => sum + s.metrics.priceCompetitiveness, 0) / comparison.length,
+        avgResponseRate: comparison.reduce((sum: number, s: any) => sum + s.metrics.responseRate, 0) / comparison.length,
+        recommendedCount: comparison.filter((s: any) => s.isRecommended).length
       }
     });
   } catch (error) {
@@ -157,7 +157,7 @@ router.get('/project/:projectId', async (req, res) => {
 });
 
 // Get detailed supplier comparison for specific items
-router.get('/items/:projectId', async (req, res) => {
+router.get('/items/:projectId', async (req: Request, res: Response) => {
   try {
     const { projectId } = req.params;
     const { itemCode, category } = req.query;
@@ -176,7 +176,7 @@ router.get('/items/:projectId', async (req, res) => {
     });
 
     // Group by item code for comparison
-    const itemComparison = procurementItems.reduce((acc, item) => {
+    const itemComparison = procurementItems.reduce((acc: any, item: any) => {
       const key = item.itemCode;
       if (!acc[key]) {
         acc[key] = {
@@ -226,7 +226,7 @@ router.get('/items/:projectId', async (req, res) => {
 });
 
 // Update supplier recommendation status
-router.put('/recommend/:projectId/:supplierId', async (req, res) => {
+router.put('/recommend/:projectId/:supplierId', async (req: Request, res: Response) => {
   try {
     const { projectId, supplierId } = req.params;
     const { isRecommended, remarks } = req.body;
@@ -255,7 +255,7 @@ router.put('/recommend/:projectId/:supplierId', async (req, res) => {
 });
 
 // Get supplier performance analytics
-router.get('/analytics/:projectId', async (req, res) => {
+router.get('/analytics/:projectId', async (req: Request, res: Response) => {
   try {
     const { projectId } = req.params;
     const { period = '30' } = req.query; // days
@@ -288,7 +288,7 @@ router.get('/analytics/:projectId', async (req, res) => {
       }
     });
 
-    const analytics = suppliers.map(ps => {
+    const analytics = suppliers.map((ps: any) => {
       const supplier = ps.supplier;
       const quotes = supplier.quotes || [];
       const deliveries = supplier.deliveries || [];
@@ -296,13 +296,13 @@ router.get('/analytics/:projectId', async (req, res) => {
       // Calculate performance metrics
       const totalQuotes = quotes.length;
       const totalDeliveries = deliveries.length;
-      const onTimeDeliveries = deliveries.filter(d => 
+      const onTimeDeliveries = deliveries.filter((d: any) => 
         d.status === 'DELIVERED' && d.deliveryDate <= d.createdAt
       ).length;
       
       const onTimeRate = totalDeliveries > 0 ? (onTimeDeliveries / totalDeliveries) * 100 : 0;
       const avgQuoteResponseTime = quotes.length > 0 
-        ? quotes.reduce((sum, quote) => {
+        ? quotes.reduce((sum: number, quote: any) => {
             const responseTime = new Date(quote.submittedAt).getTime() - new Date(quote.createdAt).getTime();
             return sum + responseTime;
           }, 0) / quotes.length
@@ -330,9 +330,9 @@ router.get('/analytics/:projectId', async (req, res) => {
       analytics,
       summary: {
         totalSuppliers: analytics.length,
-        recommendedSuppliers: analytics.filter(a => a.isRecommended).length,
-        avgOnTimeRate: analytics.reduce((sum, a) => sum + a.performance.onTimeRate, 0) / analytics.length,
-        avgResponseTime: analytics.reduce((sum, a) => sum + a.performance.avgQuoteResponseTime, 0) / analytics.length
+        recommendedSuppliers: analytics.filter((a: any) => a.isRecommended).length,
+        avgOnTimeRate: analytics.reduce((sum: number, a: any) => sum + a.performance.onTimeRate, 0) / analytics.length,
+        avgResponseTime: analytics.reduce((sum: number, a: any) => sum + a.performance.avgQuoteResponseTime, 0) / analytics.length
       }
     });
   } catch (error) {

@@ -42,7 +42,7 @@ export default function SuppliersPage() {
 
   const fetchSuppliers = async () => {
     try {
-      const response = await fetch('getApiUrl('/api')/suppliers');
+      const response = await fetch(getApiUrl('/api/suppliers'));
       if (response.ok) {
         const data = await response.json();
         setSuppliers(data);
@@ -57,7 +57,7 @@ export default function SuppliersPage() {
   const handleCreateSupplier = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch('getApiUrl('/api')/suppliers', {
+      const response = await fetch(getApiUrl('/api/suppliers'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -8,15 +8,21 @@
   "scripts": {
     "dev": "npm -w apps/web run dev",
     "dev:api": "npm -w apps/api run dev",
-    "build": "npm -ws run build",
+    "build": "./build.sh",
+    "build:api": "npm -w apps/api run build",
+    "build:web": "npm -w apps/web run build",
+    "build:db": "npm -w packages/db run build",
     "lint": "npm -ws run lint",
-    "format": "prettier -w ."
+    "format": "prettier -w .",
+    "install:all": "npm install && npm -ws run install"
   },
   "engines": {
     "node": ">=18.18.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
-    "@types/jsonwebtoken": "^9.0.10"
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^24.3.0",
+    "typescript": "^5.9.2"
   }
 }

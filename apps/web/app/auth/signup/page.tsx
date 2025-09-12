@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { getApiUrl } from '../../lib/config';
+import { getApiUrl } from '../../../lib/config';
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({

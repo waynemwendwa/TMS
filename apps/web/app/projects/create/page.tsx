@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getApiUrl } from '../../lib/config';
+import { getApiUrl } from '../../../lib/config';
 
 interface ContactInfo {
   poBox: string;

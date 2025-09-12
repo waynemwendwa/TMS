@@ -9,15 +9,17 @@
     "./client": "./dist/client.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "prisma generate && tsc",
     "generate": "prisma generate",
     "migrate": "prisma migrate dev",
-    "studio": "prisma studio"
+    "studio": "prisma studio",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "latest"
   },
   "devDependencies": {
+    "@types/node": "^24.3.0",
     "prisma": "latest",
     "typescript": "^5.4.0"
   }

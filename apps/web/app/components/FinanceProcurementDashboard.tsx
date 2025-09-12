@@ -26,7 +26,7 @@ export default function FinanceProcurementDashboard({ user }: FinanceProcurement
     async function fetchStats() {
       if (!token) return;
       try {
-        const res = await fetch('getApiUrl('/api')/dashboard/finance-procurement', {
+        const res = await fetch(getApiUrl('/api/dashboard/finance-procurement'), {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.ok) {

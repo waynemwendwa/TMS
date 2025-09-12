@@ -134,7 +134,7 @@ export default function InventoryPage() {
   const fetchOfficeDocuments = async () => {
    
       try {
-    const response = await fetch('getApiUrl('/api')/upload/office-documents');
+    const response = await fetch(getApiUrl('/api/upload/office-documents'));
     if (!response.ok) {
       throw new Error('Failed to fetch office documents');
     }
@@ -251,7 +251,7 @@ export default function InventoryPage() {
       formData.append('description', newDocument.description);
       formData.append('tags', JSON.stringify(newDocument.tags));
 
-      const response = await fetch('getApiUrl('/api')/upload/office-documents', {
+      const response = await fetch(getApiUrl('/api/upload/office-documents'), {
         method: 'POST',
         body: formData,
       });
@@ -270,13 +270,13 @@ export default function InventoryPage() {
   };
 
   const openForView = (doc: OfficeDocument) => {
-    const url = `getApiUrl('/api')/upload/download?filePath=${encodeURIComponent(doc.file_path)}`;
+    const url = `${getApiUrl('/api/upload/download')}?filePath=${encodeURIComponent(doc.file_path)}`;
     window.open(url, '_blank', 'noopener');
   }
 
   const handleDocumentDelete = async (doc: OfficeDocument) => {
     try {
-      const response = await fetch('getApiUrl('/api')/upload/file', {
+      const response = await fetch(getApiUrl('/api/upload/file'), {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -524,7 +524,7 @@ export default function InventoryPage() {
                   <button
                     onClick={() => {
                       const link = document.createElement('a');
-                      link.href = `getApiUrl('/api')/upload/download?filePath=${encodeURIComponent(doc.file_path)}`;
+                      link.href = `${getApiUrl('/api/upload/download')}?filePath=${encodeURIComponent(doc.file_path)}`;
                       link.download = doc.name;
                       link.click();
                     }}

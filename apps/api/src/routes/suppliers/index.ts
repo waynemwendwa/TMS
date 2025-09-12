@@ -1,11 +1,11 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { prisma } from '@tms/db/client';
 import comparison from './comparison.js';
 
 const router = Router();
 
 // Get all suppliers
-router.get('/', async (_req, res) => {
+router.get('/', async (_req: Request, res: Response) => {
 	try {
 		const suppliers = await prisma.supplier.findMany({
 			where: { isActive: true },
@@ -19,7 +19,7 @@ router.get('/', async (_req, res) => {
 });
 
 // Get supplier by ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
 		const supplier = await prisma.supplier.findUnique({
@@ -38,7 +38,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create new supplier
-router.post('/', async (req, res) => {
+router.post('/', async (req: Request, res: Response) => {
 	try {
 		const { name, email, phone, poBox, address, website, taxNumber } = req.body;
 		
@@ -58,7 +58,7 @@ router.post('/', async (req, res) => {
 });
 
 // Update supplier
-router.put('/:id', async (req, res) => {
+router.put('/:id', async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
 		const { name, email, phone, poBox, address, website, taxNumber, rating, isActive } = req.body;
@@ -80,7 +80,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete supplier (soft delete)
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
 		await prisma.supplier.update({
@@ -96,7 +96,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 // Get supplier quotes
-router.get('/:id/quotes', async (req, res) => {
+router.get('/:id/quotes', async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
 		const quotes = await prisma.quote.findMany({

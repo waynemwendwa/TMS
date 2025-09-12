@@ -58,7 +58,7 @@ export default function ProjectsPage() {
 
   const fetchProjects = async () => {
     try {
-      const response = await fetch('getApiUrl('/api')/projects');
+      const response = await fetch(getApiUrl('/api/projects'));
       if (response.ok) {
         const data = await response.json();
         setProjects(data);
@@ -73,7 +73,7 @@ export default function ProjectsPage() {
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch('getApiUrl('/api')/projects', {
+      const response = await fetch(getApiUrl('/api/projects'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

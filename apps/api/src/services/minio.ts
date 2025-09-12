@@ -95,7 +95,7 @@ export const listFiles = async (folder: string = ''): Promise<string[]> => {
     const stream = minioClient.listObjects(BUCKET_NAME, folder, true);
     
     return new Promise((resolve, reject) => {
-      stream.on('data', (obj) => {
+      stream.on('data', (obj: any) => {
         if (obj.name) {
           objectsList.push(obj.name);
         }
@@ -105,7 +105,7 @@ export const listFiles = async (folder: string = ''): Promise<string[]> => {
         resolve(objectsList);
       });
       
-      stream.on('error', (error) => {
+      stream.on('error', (error: any) => {
         reject(error);
       });
     });
