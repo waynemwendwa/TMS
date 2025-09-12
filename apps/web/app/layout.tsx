@@ -8,8 +8,8 @@ import Image from 'next/image'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Tender Management System',
-  description: 'Comprehensive tender management system for construction projects',
+  title: 'Inventory Management System',
+  description: 'Comprehensive inventory management system for tracking and managing stock',
 }
 
 export default function RootLayout({

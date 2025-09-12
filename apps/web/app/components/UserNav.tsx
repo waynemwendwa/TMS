@@ -61,37 +61,10 @@ export default function UserNav() {
   }, [user]);
 
   const getRoleBasedNavItems = (role: string) => {
-    switch (role) {
-      case 'SITE_SUPERVISOR':
-        return [
-          { href: '/projects', label: 'Projects' },
-          { href: '/inventory', label: 'Inventory' },
-          { href: '/reports', label: 'Reports' }
-        ];
-      case 'FINANCE_PROCUREMENT':
-        return [
-          { href: '/suppliers', label: 'Suppliers' },
-          { href: '/procurement', label: 'Procurement' },
-          { href: '/reports', label: 'Reports' }
-        ];
-      case 'CHAIRMAN':
-      case 'CHAIRMAN_PA':
-        return [
-          { href: '/projects', label: 'Projects' },
-          { href: '/suppliers', label: 'Suppliers' },
-          { href: '/procurement', label: 'Procurement' },
-          { href: '/inventory', label: 'Inventory' },
-          { href: '/reports', label: 'Reports' }
-        ];
-      default:
-        return [
-          { href: '/projects', label: 'Projects' },
-          { href: '/suppliers', label: 'Suppliers' },
-          { href: '/procurement', label: 'Procurement' },
-          { href: '/inventory', label: 'Inventory' },
-          { href: '/reports', label: 'Reports' }
-        ];
-    }
+    // All roles now only see inventory
+    return [
+      { href: '/inventory', label: 'Inventory' }
+    ];
   };
 
   if (loading) {

@@ -1,5 +1,5 @@
 {
-  "name": "tms",
+  "name": "inventory-management-system",
   "private": true,
   "workspaces": [
     "apps/*",
