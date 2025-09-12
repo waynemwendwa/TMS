@@ -15,7 +15,7 @@
     "build:api": "npm -w apps/api run build",
     "build:web": "npm -w apps/web run build",
     "build:db": "npm -w packages/db run build",
-    "migrate": "cd ../../packages/db && npx prisma migrate deploy && npx prisma generate",
+    "migrate": "cd packages/db && npx prisma migrate deploy && npx prisma generate",
     "lint": "npm -ws run lint",
     "format": "prettier -w .",
     "install:all": "npm install && npm -ws run install"
@@ -27,6 +27,7 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.3.0",
+    "concurrently": "^8.2.2",
     "typescript": "^5.9.2"
   }
 }

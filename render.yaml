@@ -12,7 +12,7 @@ services:
     env: node
     plan: starter
     region: oregon
-    buildCommand: npm run build:api
+    buildCommand: ./build-api.sh
     startCommand: cd apps/api && npm start
     envVars:
       - key: NODE_ENV
@@ -35,7 +35,7 @@ services:
     env: node
     plan: starter
     region: oregon
-    buildCommand: npm run build:web
+    buildCommand: ./build-web.sh
     startCommand: cd apps/web && npm start
     envVars:
       - key: NODE_ENV

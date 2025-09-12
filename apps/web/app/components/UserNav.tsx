@@ -60,7 +60,7 @@ export default function UserNav() {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [user]);
 
-  const getRoleBasedNavItems = (role: string) => {
+  const getRoleBasedNavItems = () => {
     // All roles now only see inventory
     return [
       { href: '/inventory', label: 'Inventory' }
@@ -95,7 +95,7 @@ export default function UserNav() {
     );
   }
 
-  const navItems = getRoleBasedNavItems(user.role);
+  const navItems = getRoleBasedNavItems();
 
   return (
     <div className="flex items-center space-x-6">

@@ -22,9 +22,21 @@ echo "🔨 Building database package..."
 npm -w packages/db run build
 
 echo "🔨 Building API package..."
+# Ensure API dependencies are installed
+cd apps/api
+npm install
+cd ../..
+
+# Build API
 npm -w apps/api run build
 
 echo "🔨 Building web package..."
+# Ensure web dependencies are installed
+cd apps/web
+npm install
+cd ../..
+
+# Build web
 npm -w apps/web run build
 
 echo "✅ Build completed successfully!"

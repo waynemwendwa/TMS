@@ -123,7 +123,7 @@ export default function InventoryPage() {
         if (response.ok) {
           const inventoryData = await response.json();
           // Convert inventory data to the expected format
-          const convertedEquipment = inventoryData.map((item: any) => ({
+          const convertedEquipment = inventoryData.map((item: { id: string; name: string; description?: string; category: string; status: string; location: string; assignedTo?: string; lastMaintenance?: string; nextMaintenance?: string; purchaseDate?: string; warrantyExpiry?: string; cost?: number; supplier?: string; notes?: string; serialNumber?: string; model?: string; brand?: string; createdAt: string; updatedAt: string }) => ({
             id: item.id,
             name: item.name,
             description: item.description || '',
