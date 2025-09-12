@@ -1,10 +1,10 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { prisma } from '@tms/db/client';
 
 const router = Router();
 
 // Get all procurement plans for a project
-router.get('/project/:projectId', async (req, res) => {
+router.get('/project/:projectId', async (req: Request, res: Response) => {
 	try {
 		const { projectId } = req.params;
 		const procurementPlans = await prisma.procurementPlan.findMany({
@@ -26,7 +26,7 @@ router.get('/project/:projectId', async (req, res) => {
 });
 
 // Get procurement plan by ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
 		const procurementPlan = await prisma.procurementPlan.findUnique({
@@ -53,7 +53,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create new procurement plan
-router.post('/', async (req, res) => {
+router.post('/', async (req: Request, res: Response) => {
 	try {
 		const { name, description, projectId, items } = req.body;
 		
@@ -87,7 +87,7 @@ router.post('/', async (req, res) => {
 });
 
 // Update procurement plan
-router.put('/:id', async (req, res) => {
+router.put('/:id', async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
 		const { name, description, status } = req.body;
@@ -109,7 +109,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete procurement plan
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
 		await prisma.procurementPlan.delete({
@@ -124,7 +124,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 // Add item to procurement plan
-router.post('/:id/items', async (req, res) => {
+router.post('/:id/items', async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
 		const { itemCode, description, specification, unit, quantity, marketPrice, supplierId, remarks } = req.body;
@@ -158,7 +158,7 @@ router.post('/:id/items', async (req, res) => {
 });
 
 // Update procurement item
-router.put('/items/:itemId', async (req, res) => {
+router.put('/items/:itemId', async (req: Request, res: Response) => {
 	try {
 		const { itemId } = req.params;
 		const { itemCode, description, specification, unit, quantity, marketPrice, tenderedPrice, supplierId, remarks } = req.body;
@@ -193,7 +193,7 @@ router.put('/items/:itemId', async (req, res) => {
 });
 
 // Delete procurement item
-router.delete('/items/:itemId', async (req, res) => {
+router.delete('/items/:itemId', async (req: Request, res: Response) => {
 	try {
 		const { itemId } = req.params;
 		await prisma.procurementItem.delete({
@@ -208,7 +208,7 @@ router.delete('/items/:itemId', async (req, res) => {
 });
 
 // Generate sample approval form
-router.post('/:id/sample-approval', async (req, res) => {
+router.post('/:id/sample-approval', async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
 		const { title, description, supplierId } = req.body;

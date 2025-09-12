@@ -1,11 +1,11 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { prisma } from '@tms/db/client';
 import { requireAuth, requireRole } from '../../middleware/auth.js';
 
 const router = Router();
 
 // Get all projects
-router.get('/', async (_req, res) => {
+router.get('/', async (_req: Request, res: Response) => {
 	try {
 		const projects = await prisma.project.findMany({
 			orderBy: { createdAt: 'desc' }
@@ -18,7 +18,7 @@ router.get('/', async (_req, res) => {
 });
 
 // Get project by ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
 		const project = await prisma.project.findUnique({
@@ -37,7 +37,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create new project
-router.post('/', requireAuth, requireRole('SITE_SUPERVISOR', 'CHAIRMAN', 'CHAIRMAN_PA'), async (req, res) => {
+router.post('/', requireAuth, requireRole('SITE_SUPERVISOR', 'CHAIRMAN', 'CHAIRMAN_PA'), async (req: Request, res: Response) => {
 	try {
 		const { 
 			title, 
@@ -105,7 +105,7 @@ router.post('/', requireAuth, requireRole('SITE_SUPERVISOR', 'CHAIRMAN', 'CHAIRM
 });
 
 // Update project
-router.put('/:id', async (req, res) => {
+router.put('/:id', async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
 		const { title } = req.body;
@@ -127,7 +127,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete project
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req: Request, res: Response) => {
 	try {
 		const { id } = req.params;
 		await prisma.project.delete({
