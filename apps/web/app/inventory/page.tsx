@@ -12,7 +12,7 @@ interface OfficeDocument {
   type: 'pdf' | 'doc' | 'docx' | 'jpg' | 'jpeg' | 'png';
   size: number;
   url: string;
-  file_path: string;
+  filePath: string;
   uploadedBy: string;
   uploadedAt: string;
   tags?: string[];
@@ -114,14 +114,52 @@ export default function InventoryPage() {
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      // Fetch all three types of data
+      // Fetch inventory data from the actual API
+      const token = typeof window !== 'undefined' ? localStorage.getItem('tms_token') : null;
+      if (token) {
+        const response = await fetch(getApiUrl('/api/inventory'), {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const inventoryData = await response.json();
+          // Convert inventory data to the expected format
+          const convertedEquipment = inventoryData.map((item: any) => ({
+            id: item.id,
+            name: item.name,
+            description: item.description || '',
+            category: item.category || 'OTHER',
+            serialNumber: item.serialNumber || '',
+            model: item.model || '',
+            brand: item.brand || '',
+            status: 'AVAILABLE' as const,
+            location: item.location || '',
+            assignedTo: item.assignedTo || '',
+            purchaseDate: item.purchaseDate || '',
+            lastMaintenance: item.lastMaintenance || '',
+            nextMaintenance: item.nextMaintenance || '',
+            notes: item.notes || ''
+          }));
+          setToolsEquipment(convertedEquipment);
+        } else {
+          console.error('Failed to fetch inventory data:', response.status);
+          // Use mock data as fallback
+          fetchToolsEquipment();
+        }
+      } else {
+        console.log('No authentication token found, using mock data');
+        // Use mock data when not authenticated
+        fetchToolsEquipment();
+      }
+      
+      // Fetch other data (mock for now)
       await Promise.all([
         fetchOfficeDocuments(),
-        fetchToolsEquipment(),
         fetchOrdersReceipts()
       ]);
     } catch (error) {
       console.error('Error fetching data:', error);
+      // Use mock data as fallback
+      fetchToolsEquipment();
     } finally {
       setLoading(false);
     }
@@ -129,21 +167,22 @@ export default function InventoryPage() {
 
   useEffect(() => {
     fetchAllData();
-  }, [fetchAllData]);
+  }, []);
 
   const fetchOfficeDocuments = async () => {
-   
-      try {
-    const response = await fetch(getApiUrl('/api/upload/office-documents'));
-    if (!response.ok) {
-      throw new Error('Failed to fetch office documents');
+    try {
+      const response = await fetch(getApiUrl('/api/upload/office-documents'));
+      if (response.ok) {
+        const documents: OfficeDocument[] = await response.json();
+        setOfficeDocuments(documents);
+      } else {
+        console.error('Failed to fetch office documents:', response.status);
+        setOfficeDocuments([]);
+      }
+    } catch (error) {
+      console.error('Error fetching office documents:', error);
+      setOfficeDocuments([]);
     }
-    const documents: OfficeDocument[] = await response.json();
-    setOfficeDocuments(documents);
-  } catch (error) {
-    console.error('Error fetching office documents:', error);
-    setOfficeDocuments([]); // Optionally clear or keep previous state
-  }
   };
 
   const fetchToolsEquipment = async () => {
@@ -242,6 +281,12 @@ export default function InventoryPage() {
   const handleDocumentUpload = async (files: FileList) => {
     setUploadingFiles(true);
     try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('tms_token') : null;
+      if (!token) {
+        alert('Please log in to upload documents');
+        return;
+      }
+
       const formData = new FormData();
       Array.from(files).forEach(file => {
         formData.append('documents', file);
@@ -253,6 +298,9 @@ export default function InventoryPage() {
 
       const response = await fetch(getApiUrl('/api/upload/office-documents'), {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         body: formData,
       });
 
@@ -261,34 +309,58 @@ export default function InventoryPage() {
         setOfficeDocuments(prev => [...uploadedDocs, ...prev]);
         setNewDocument({ name: '', description: '', category: 'OTHER', tags: [] });
         setShowDocumentUpload(false);
+        alert('Documents uploaded successfully!');
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to upload documents');
       }
     } catch (error) {
       console.error('Error uploading documents:', error);
+      alert(`Error uploading documents: ${error instanceof Error ? error.message : 'Please try again.'}`);
     } finally {
       setUploadingFiles(false);
     }
   };
 
   const openForView = (doc: OfficeDocument) => {
-    const url = `${getApiUrl('/api/upload/download')}?filePath=${encodeURIComponent(doc.file_path)}`;
-    window.open(url, '_blank', 'noopener');
+    if (doc.filePath) {
+      // Use the view endpoint for browser viewing
+      const viewUrl = getApiUrl(`/api/upload/view?filePath=${encodeURIComponent(doc.filePath)}`);
+      window.open(viewUrl, '_blank', 'noopener');
+    } else {
+      alert('File preview not available');
+    }
   }
 
   const handleDocumentDelete = async (doc: OfficeDocument) => {
     try {
-      const response = await fetch(getApiUrl('/api/upload/file'), {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ filePath: doc.file_path }),
-      });
+      const token = typeof window !== 'undefined' ? localStorage.getItem('tms_token') : null;
+      if (!token) {
+        alert('Please log in to delete documents');
+        return;
+      }
 
-      if (response.ok) {
-        setOfficeDocuments(prev => prev.filter(d => d.id !== doc.id));
+      if (confirm('Are you sure you want to delete this document?')) {
+        const response = await fetch(getApiUrl('/api/upload/file'), {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ filePath: doc.filePath }),
+        });
+
+        if (response.ok) {
+          setOfficeDocuments(prev => prev.filter(d => d.id !== doc.id));
+          alert('Document deleted successfully!');
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Failed to delete document');
+        }
       }
     } catch (error) {
       console.error('Error deleting document:', error);
+      alert(`Error deleting document: ${error instanceof Error ? error.message : 'Please try again.'}`);
     }
   };
 
@@ -523,10 +595,14 @@ export default function InventoryPage() {
                   </button>
                   <button
                     onClick={() => {
-                      const link = document.createElement('a');
-                      link.href = `${getApiUrl('/api/upload/download')}?filePath=${encodeURIComponent(doc.file_path)}`;
-                      link.download = doc.name;
-                      link.click();
+                      if (doc.filePath) {
+                        const link = document.createElement('a');
+                        link.href = getApiUrl(`/api/upload/download?filePath=${encodeURIComponent(doc.filePath)}`);
+                        link.download = doc.name;
+                        link.click();
+                      } else {
+                        alert('Download not available');
+                      }
                     }}
                     className="flex-1 bg-green-100 text-green-700 px-3 py-2 rounded text-sm hover:bg-green-200 transition-colors whitespace-nowrap"
                   >

@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import health from './routes/health.js';
 import auth from './routes/auth.js';
 import inventory from './routes/inventory.js';
+import upload from './routes/upload/index.js';
 
 const app = express();
 app.use(cors({
@@ -19,6 +20,7 @@ app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use('/api', health);
 app.use('/api/auth', auth);
 app.use('/api/inventory', inventory);
+app.use('/api/upload', upload);
 
 const port = Number(process.env.PORT) || 4000;
 const host = '0.0.0.0';

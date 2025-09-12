@@ -77,3 +77,40 @@ enum InventoryLogType {
   ADJUSTMENT
   TRANSFER
 }
+
+// Office Documents Management
+model OfficeDocument {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  category    DocumentCategory
+  type        DocumentType
+  size        Int
+  url         String
+  filePath    String
+  uploadedBy  String
+  uploadedAt  DateTime @default(now())
+  tags        String[] @default([])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("office_documents")
+}
+
+enum DocumentCategory {
+  CONTRACTS
+  REPORTS
+  POLICIES
+  PROCEDURES
+  TEMPLATES
+  OTHER
+}
+
+enum DocumentType {
+  PDF
+  DOC
+  DOCX
+  JPG
+  JPEG
+  PNG
+}
