@@ -16,10 +16,10 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@prisma/client": "latest"
+    "@prisma/client": "latest",
+    "@types/node": "^24.3.0"
   },
   "devDependencies": {
-    "@types/node": "^24.3.0",
     "prisma": "latest",
     "typescript": "^5.4.0"
   }
