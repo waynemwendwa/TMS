@@ -21,7 +21,9 @@ const corsOptions = {
 				'https://tms-web-eaqk.onrender.com', 
 				'https://contempeng.online',
 				// Allow any Render frontend URL
-				/^https:\/\/tms-web-.*\.onrender\.com$/
+				/^https:\/\/tms-web-.*\.onrender\.com$/,
+				// Temporarily allow the wrong API URL being used
+				'https://api.render.com'
 			]
 			: ['http://localhost:3000', 'http://localhost:3001'];
 		
