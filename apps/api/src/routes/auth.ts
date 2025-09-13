@@ -9,28 +9,38 @@ const router = Router();
 // Simple login by email only (for dev/demo). In production, add password hashing & checks
 router.post('/login', async (req: Request, res: Response) => {
   try {
+    console.log('Login attempt:', { email: req.body.email, hasPassword: !!req.body.password });
+    
     const { email, password } = req.body;
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
+    console.log('Looking up user in database...');
     const user = await prisma.user.findUnique({ where: { email } });
+    console.log('User found:', !!user);
+    
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     if (!user.passwordHash) {
       return res.status(401).json({ error: 'Password not set' });
     }
+    
+    console.log('Comparing password...');
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    console.log('Generating token...');
     const token = signToken({ id: user.id, email: user.email, role: user.role });
+    console.log('Login successful');
     res.json({ token, user });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Failed to login' });
+    console.error('Login error details:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    res.status(500).json({ error: 'Failed to login', details: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 

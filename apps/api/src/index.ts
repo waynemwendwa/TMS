@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
+import { prisma } from '@tms/db/client';
 import health from './routes/health.js';
 import auth from './routes/auth.js';
 import inventory from './routes/inventory.js';
@@ -61,7 +62,16 @@ app.use('/api/upload', upload);
 const port = Number(process.env.PORT) || 4000;
 const host = '0.0.0.0';
 
-app.listen(port, host, () => {
+app.listen(port, host, async () => {
 	console.log(`🚀 API server running on ${host}:${port}`);
 	console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+	console.log(`🗄️ Database URL: ${process.env.DATABASE_URL ? 'Set' : 'Not set'}`);
+	
+	// Test database connection
+	try {
+		await prisma.$connect();
+		console.log('✅ Database connected successfully');
+	} catch (error) {
+		console.error('❌ Database connection failed:', error);
+	}
 });
