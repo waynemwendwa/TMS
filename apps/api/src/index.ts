@@ -8,14 +8,44 @@ import inventory from './routes/inventory.js';
 import upload from './routes/upload/index.js';
 
 const app = express();
-app.use(cors({
-	origin: process.env.NODE_ENV === 'production' 
-		? ['https://tms-web-eaqk.onrender.com', 'https://contempeng.online']
-		: ['http://localhost:3000', 'http://localhost:3001'],
+// CORS configuration
+const corsOptions = {
+	origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+		// Allow requests with no origin (like mobile apps or curl requests)
+		if (!origin) return callback(null, true);
+		
+		const allowedOrigins = process.env.NODE_ENV === 'production' 
+			? [
+				'https://tms-web-376k.onrender.com',
+				'https://tms-web-eaqk.onrender.com', 
+				'https://contempeng.online',
+				// Allow any Render frontend URL
+				/^https:\/\/tms-web-.*\.onrender\.com$/
+			]
+			: ['http://localhost:3000', 'http://localhost:3001'];
+		
+		// Check if origin matches any allowed origin (including regex patterns)
+		const isAllowed = allowedOrigins.some(allowedOrigin => {
+			if (typeof allowedOrigin === 'string') {
+				return origin === allowedOrigin;
+			} else if (allowedOrigin instanceof RegExp) {
+				return allowedOrigin.test(origin);
+			}
+			return false;
+		});
+		
+		if (isAllowed) {
+			callback(null, true);
+		} else {
+			callback(new Error('Not allowed by CORS'));
+		}
+	},
 	credentials: true,
 	methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 	allowedHeaders: ['Content-Type', 'Authorization']
-  }));
+};
+
+app.use(cors(corsOptions));
 
 app.use(express.json());
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
