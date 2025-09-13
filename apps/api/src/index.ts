@@ -10,7 +10,7 @@ import upload from './routes/upload/index.js';
 const app = express();
 app.use(cors({
 	origin: process.env.NODE_ENV === 'production' 
-		? ['https://contempeng.online', 'https://contempeng.online']
+		? ['https://tms-web-eaqk.onrender.com', 'https://contempeng.online']
 		: ['http://localhost:3000', 'http://localhost:3001'],
 	credentials: true
   }));
