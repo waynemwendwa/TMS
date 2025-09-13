@@ -1,11 +1,12 @@
 // API Configuration
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://tms-api.onrender.com';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://tms-api-zcib.onrender.com';
 
 // Debug logging (remove in production)
 if (typeof window !== 'undefined') {
   console.log('🔧 API Configuration Debug:');
   console.log('NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
   console.log('API_BASE_URL:', API_BASE_URL);
+  console.log('All env vars:', Object.keys(process.env).filter(key => key.includes('API')));
 }
 
 // Helper function to build API URLs

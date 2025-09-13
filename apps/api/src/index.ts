@@ -16,6 +16,7 @@ const corsOptions = {
 		
 		const allowedOrigins = process.env.NODE_ENV === 'production' 
 			? [
+				'https://tms-web-gzrw.onrender.com',
 				'https://tms-web-376k.onrender.com',
 				'https://tms-web-eaqk.onrender.com', 
 				'https://contempeng.online',

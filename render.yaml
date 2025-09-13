@@ -35,7 +35,7 @@ services:
     env: node
     plan: starter
     region: oregon
-    buildCommand: NEXT_PUBLIC_API_URL=https://tms-api.onrender.com npm run build:web
+    buildCommand: NEXT_PUBLIC_API_URL=https://tms-api-zcib.onrender.com npm run build:web
     startCommand: cd apps/web && PORT=3000 npm start
     envVars:
       - key: NODE_ENV
@@ -43,4 +43,4 @@ services:
       - key: PORT
         value: 3000
       - key: NEXT_PUBLIC_API_URL
-        value: https://tms-api.onrender.com
+        value: https://tms-api-zcib.onrender.com
