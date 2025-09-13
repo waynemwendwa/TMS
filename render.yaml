@@ -43,7 +43,4 @@ services:
       - key: PORT
         value: 3000
       - key: NEXT_PUBLIC_API_URL
-        fromService:
-          type: web
-          name: tms-api
-          envVarKey: RENDER_EXTERNAL_URL
+        value: https://tms-api.onrender.com
