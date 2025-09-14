@@ -20,6 +20,41 @@ router.get('/test', (req, res) => {
   });
 });
 
+// Test database and roles
+router.get('/test-db', async (req, res) => {
+  try {
+    // Test database connection
+    await prisma.$queryRaw`SELECT 1`;
+    
+    // Test if we can create a user with FINANCE_PROCUREMENT role
+    const testUser = await prisma.user.create({
+      data: {
+        email: 'test@example.com',
+        name: 'Test User',
+        role: 'FINANCE_PROCUREMENT',
+        passwordHash: 'test'
+      }
+    });
+    
+    // Clean up test user
+    await prisma.user.delete({ where: { id: testUser.id } });
+    
+    res.json({ 
+      status: 'ok', 
+      message: 'Database and roles working correctly',
+      timestamp: new Date().toISOString(),
+      testResult: 'FINANCE_PROCUREMENT role is available'
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'error', 
+      message: 'Database test failed',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Simple login by email only (for dev/demo). In production, add password hashing & checks
 router.post('/login', async (req: Request, res: Response) => {
   try {
