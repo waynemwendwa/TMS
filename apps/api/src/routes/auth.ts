@@ -83,26 +83,59 @@ router.post('/login', async (req: Request, res: Response) => {
 // Simple signup (dev/demo): create user by email, name, role
 router.post('/signup', async (req: Request, res: Response) => {
   try {
+    console.log('=== SIGNUP ATTEMPT ===');
+    console.log('Body:', req.body);
+    console.log('Headers:', req.headers);
+    
     const { email, name, role, password } = req.body;
+    console.log('Received data:', { email, name, role, hasPassword: !!password });
+    
     if (!email || !name || !role || !password) {
+      console.log('Missing required fields');
       return res.status(400).json({ error: 'Email, name, role and password are required' });
     }
 
+    console.log('Checking if user exists...');
     const existing = await prisma.user.findUnique({ where: { email } });
+    console.log('User exists:', !!existing);
+    
     if (existing) {
+      console.log('User already exists');
       return res.status(409).json({ error: 'User already exists' });
     }
 
+    console.log('Hashing password...');
     const passwordHash = await bcrypt.hash(password, 10);
+    console.log('Password hashed successfully');
+    
+    console.log('Creating user in database...');
     const user = await prisma.user.create({
       data: { email, name, role, passwordHash }
     });
+    console.log('User created successfully:', user.id);
 
+    console.log('Generating token...');
     const token = signToken({ id: user.id, email: user.email, role: user.role });
-    res.status(201).json({ token, user });
+    console.log('Signup successful for:', email);
+    
+    res.status(201).json({ 
+      token, 
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role
+      }
+    });
   } catch (error) {
-    console.error('Signup error:', error);
-    res.status(500).json({ error: 'Failed to signup' });
+    console.error('=== SIGNUP ERROR ===');
+    console.error('Error:', error);
+    console.error('Stack:', error instanceof Error ? error.stack : 'No stack');
+    res.status(500).json({ 
+      error: 'Failed to signup', 
+      details: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
