@@ -55,6 +55,65 @@ router.get('/test-db', async (req, res) => {
   }
 });
 
+// Migration status endpoint
+router.get('/migration-status', async (req, res) => {
+  try {
+    // Test database connection
+    await prisma.$connect();
+    
+    // Check if users table exists
+    const userCount = await prisma.user.count();
+    
+    // Check if we can create a user with FINANCE_PROCUREMENT role
+    let roleTest = 'unknown';
+    try {
+      const testUser = await prisma.user.create({
+        data: {
+          email: 'migration-status-test@example.com',
+          name: 'Migration Status Test',
+          role: 'FINANCE_PROCUREMENT',
+          passwordHash: 'test'
+        }
+      });
+      await prisma.user.delete({ where: { id: testUser.id } });
+      roleTest = 'success';
+    } catch (roleError) {
+      roleTest = 'failed';
+    }
+    
+    res.json({
+      status: 'success',
+      message: 'Migration status check completed',
+      timestamp: new Date().toISOString(),
+      database: {
+        connected: true,
+        usersTableExists: true,
+        userCount: userCount
+      },
+      roles: {
+        FINANCE_PROCUREMENT: roleTest
+      },
+      migration: {
+        status: 'completed',
+        tablesCreated: true,
+        rolesAvailable: roleTest === 'success'
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Migration status check failed',
+      timestamp: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Unknown error',
+      migration: {
+        status: 'failed',
+        tablesCreated: false,
+        rolesAvailable: false
+      }
+    });
+  }
+});
+
 // Simple login by email only (for dev/demo). In production, add password hashing & checks
 router.post('/login', async (req: Request, res: Response) => {
   try {

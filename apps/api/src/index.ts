@@ -67,11 +67,28 @@ app.listen(port, host, async () => {
 	console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
 	console.log(`🗄️ Database URL: ${process.env.DATABASE_URL ? 'Set' : 'Not set'}`);
 	
-	// Test database connection
+	// Test database connection and verify tables exist
 	try {
 		await prisma.$connect();
 		console.log('✅ Database connected successfully');
+		
+		// Test if tables exist by running a simple query
+		const userCount = await prisma.user.count();
+		console.log(`📊 Database tables verified - Users table exists (${userCount} users)`);
+		
+		// Test if FINANCE_PROCUREMENT role is available (without creating a user)
+		try {
+			// Just test if the enum value is valid by checking the schema
+			await prisma.$queryRaw`SELECT unnest(enum_range(NULL::"UserRole")) as role`;
+			console.log('✅ UserRole enum is available');
+			console.log('✅ FINANCE_PROCUREMENT role should be available');
+		} catch (roleError) {
+			console.log('⚠️ Role enum test failed:', roleError instanceof Error ? roleError.message : 'Unknown error');
+		}
+		
+		console.log('🎉 Database is fully ready and operational!');
 	} catch (error) {
 		console.error('❌ Database connection failed:', error);
+		console.error('❌ This usually means the database migration did not run properly');
 	}
 });

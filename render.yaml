@@ -13,7 +13,7 @@ services:
     plan: starter
     region: oregon
     buildCommand: npm run build:api
-    startCommand: cd packages/db && npx prisma migrate deploy && cd ../apps/api && npm start
+    startCommand: cd apps/api && npm start
     envVars:
       - key: NODE_ENV
         value: production

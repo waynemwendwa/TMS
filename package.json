@@ -12,10 +12,10 @@
     "start": "concurrently \"npm run start:api\" \"npm run start:web\"",
     "start:api": "cd apps/api && npm start",
     "start:web": "cd apps/web && npm start",
-    "build:api": "npm install && npm run build:db && cd apps/api && npm install && npm run build",
+    "build:api": "npm install && npm run build:db && npm run migrate && cd apps/api && npm install && npm run build",
     "build:web": "npm install && npm run build:db && cd apps/web && npm install && npm run build",
     "build:db": "npm -w packages/db run build",
-    "migrate": "cd packages/db && npx prisma migrate deploy && npx prisma generate",
+    "migrate": "./migrate-db.sh",
     "lint": "npm -ws run lint",
     "format": "prettier -w .",
     "install:all": "npm install && npm -ws run install"
