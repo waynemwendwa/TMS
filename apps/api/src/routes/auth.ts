@@ -6,41 +6,77 @@ import bcrypt from 'bcryptjs';
 
 const router = Router();
 
+// Test endpoint to debug issues
+router.get('/test', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    message: 'Auth router is working',
+    timestamp: new Date().toISOString(),
+    env: {
+      NODE_ENV: process.env.NODE_ENV,
+      DATABASE_URL: process.env.DATABASE_URL ? 'Set' : 'Not set',
+      JWT_SECRET: process.env.JWT_SECRET ? 'Set' : 'Not set'
+    }
+  });
+});
+
 // Simple login by email only (for dev/demo). In production, add password hashing & checks
 router.post('/login', async (req: Request, res: Response) => {
   try {
-    console.log('Login attempt:', { email: req.body.email, hasPassword: !!req.body.password });
+    console.log('=== LOGIN ATTEMPT ===');
+    console.log('Body:', req.body);
+    console.log('Headers:', req.headers);
     
     const { email, password } = req.body;
     if (!email || !password) {
+      console.log('Missing email or password');
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    console.log('Looking up user in database...');
+    console.log('Looking up user:', email);
     const user = await prisma.user.findUnique({ where: { email } });
-    console.log('User found:', !!user);
+    console.log('User found:', user ? 'Yes' : 'No');
     
     if (!user) {
+      console.log('User not found');
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+    
     if (!user.passwordHash) {
+      console.log('No password hash');
       return res.status(401).json({ error: 'Password not set' });
     }
     
     console.log('Comparing password...');
     const ok = await bcrypt.compare(password, user.passwordHash);
+    console.log('Password match:', ok);
+    
     if (!ok) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     console.log('Generating token...');
     const token = signToken({ id: user.id, email: user.email, role: user.role });
-    console.log('Login successful');
-    res.json({ token, user });
+    console.log('Login successful for:', email);
+    
+    res.json({ 
+      token, 
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role
+      }
+    });
   } catch (error) {
-    console.error('Login error details:', error);
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-    res.status(500).json({ error: 'Failed to login', details: error instanceof Error ? error.message : 'Unknown error' });
+    console.error('=== LOGIN ERROR ===');
+    console.error('Error:', error);
+    console.error('Stack:', error instanceof Error ? error.stack : 'No stack');
+    res.status(500).json({ 
+      error: 'Failed to login', 
+      details: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
