@@ -1,8 +1,40 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '@tms/db/client';
 import { requireAuth } from '../middleware/auth.js';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 
 const router = Router();
+
+// ---- Project Documents Upload Setup ----
+const projectStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    // Place under uploads/project-documents/<projectId>
+    const projectId = (req.params as any)?.id || 'unassigned';
+    const uploadDir = path.join(process.cwd(), 'uploads', 'project-documents', projectId);
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const projectUpload = multer({
+  storage: projectStorage,
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /pdf|doc|docx|jpg|jpeg|png/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (mimetype && extname) return cb(null, true);
+    cb(new Error('Only PDF, DOC, DOCX, JPG, JPEG, and PNG files are allowed'));
+  }
+});
 
 // Get all projects
 router.get('/', requireAuth, async (req: Request, res: Response) => {
@@ -216,3 +248,93 @@ router.delete('/stakeholders/:stakeholderId', requireAuth, async (req: Request, 
 });
 
 export default router;
+
+// ---- Project Documents Endpoints ----
+
+// List project documents (optionally filter by documentType or category)
+router.get('/:id/documents', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { documentType, category } = req.query as { documentType?: string; category?: string };
+
+    const documents = await prisma.projectDocument.findMany({
+      where: {
+        projectId: id,
+        ...(documentType ? { documentType } : {}),
+        ...(category ? { category: category as any } : {})
+      },
+      orderBy: { uploadedAt: 'desc' }
+    });
+
+    res.json(documents);
+  } catch (error) {
+    console.error('Error fetching project documents:', error);
+    res.status(500).json({ error: 'Failed to fetch project documents' });
+  }
+});
+
+// Upload project documents (preliminary or BOQ)
+router.post('/:id/documents', requireAuth, projectUpload.array('documents', 10), async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { category, name, description, documentType } = req.body as {
+      category?: string;
+      name?: string;
+      description?: string;
+      documentType?: string; // "preliminary" | "boq"
+    };
+
+    const files = req.files as Express.Multer.File[] | undefined;
+    if (!files || files.length === 0) {
+      return res.status(400).json({ error: 'No files uploaded' });
+    }
+
+    if (!documentType) {
+      return res.status(400).json({ error: 'documentType is required (preliminary|boq)' });
+    }
+
+    const uploaded: any[] = [];
+    for (const file of files) {
+      if (!file.path) throw new Error('File path is undefined');
+
+      const created = await prisma.projectDocument.create({
+        data: {
+          projectId: id,
+          name: name || file.originalname,
+          description: description || '',
+          category: (category as any) || 'OTHER',
+          type: path.extname(file.originalname).toLowerCase().substring(1).toUpperCase() as any,
+          size: file.size,
+          url: `/api/upload/view?filePath=${encodeURIComponent(file.path)}`,
+          filePath: file.path,
+          uploadedBy: req.user!.id,
+          documentType
+        }
+      });
+      uploaded.push(created);
+    }
+
+    res.status(201).json(uploaded);
+  } catch (error) {
+    console.error('Error uploading project documents:', error);
+    res.status(500).json({ error: 'Failed to upload project documents' });
+  }
+});
+
+// Delete a project document
+router.delete('/documents/:docId', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { docId } = req.params;
+    const doc = await prisma.projectDocument.findUnique({ where: { id: docId } });
+    if (!doc) return res.status(404).json({ error: 'Document not found' });
+
+    await prisma.projectDocument.delete({ where: { id: docId } });
+    if (doc.filePath && fs.existsSync(doc.filePath)) {
+      try { fs.unlinkSync(doc.filePath); } catch {}
+    }
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting project document:', error);
+    res.status(500).json({ error: 'Failed to delete project document' });
+  }
+});
