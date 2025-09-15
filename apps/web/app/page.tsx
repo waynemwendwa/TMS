@@ -11,6 +11,12 @@ export default function Home() {
     lowStockItems: 0,
     outOfStockItems: 0
   });
+  const [projectStats, setProjectStats] = useState({
+    totalProjects: 0,
+    toStartProjects: 0,
+    ongoingProjects: 0,
+    completedProjects: 0
+  });
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('tms_token') : null;
@@ -51,9 +57,32 @@ export default function Home() {
     fetchInventoryStats();
   }, []);
 
-  // If user is logged in, show inventory dashboard
+  useEffect(() => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('tms_token') : null;
+    async function fetchProjectStats() {
+      if (!token) return;
+      try {
+        const res = await fetch(getApiUrl('/api/projects'), {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const totalProjects = data.length;
+          const toStartProjects = data.filter((project: any) => project.status === 'TO_START').length;
+          const ongoingProjects = data.filter((project: any) => project.status === 'ONGOING').length;
+          const completedProjects = data.filter((project: any) => project.status === 'COMPLETED').length;
+          setProjectStats({ totalProjects, toStartProjects, ongoingProjects, completedProjects });
+        }
+      } catch (error) {
+        console.error('Error fetching project stats:', error);
+      }
+    }
+    fetchProjectStats();
+  }, []);
+
+  // If user is logged in, show TMS dashboard
   if (user) {
-    return <InventoryDashboard user={user} inventoryStats={inventoryStats} />;
+    return <TMSDashboard user={user} inventoryStats={inventoryStats} projectStats={projectStats} />;
   }
 
   // Landing page for non-logged-in users
@@ -161,62 +190,177 @@ export default function Home() {
   );
 }
 
-// Inventory Dashboard Component
-function InventoryDashboard({ user, inventoryStats }: { user: any, inventoryStats: any }) {
+// TMS Dashboard Component
+function TMSDashboard({ user, inventoryStats, projectStats }: { user: any, inventoryStats: any, projectStats: any }) {
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg shadow-lg p-6 text-white">
         <h1 className="text-3xl font-bold mb-2">Welcome back, {user.name}</h1>
-        <p className="text-blue-100">Inventory Management Dashboard</p>
+        <p className="text-blue-100">TMS Management Dashboard</p>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Overview Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Inventory Stats */}
         <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="text-3xl font-bold text-blue-600">{inventoryStats.totalItems}</div>
-          <div className="text-sm text-gray-600">Total Items</div>
+          <div className="flex items-center">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <span className="text-2xl">📦</span>
+            </div>
+            <div className="ml-4">
+              <div className="text-2xl font-bold text-blue-600">{inventoryStats.totalItems}</div>
+              <div className="text-sm text-gray-600">Total Items</div>
+            </div>
+          </div>
         </div>
+        
         <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="text-3xl font-bold text-orange-600">{inventoryStats.lowStockItems}</div>
-          <div className="text-sm text-gray-600">Low Stock Items</div>
+          <div className="flex items-center">
+            <div className="p-2 bg-orange-100 rounded-lg">
+              <span className="text-2xl">⚠️</span>
+            </div>
+            <div className="ml-4">
+              <div className="text-2xl font-bold text-orange-600">{inventoryStats.lowStockItems}</div>
+              <div className="text-sm text-gray-600">Low Stock</div>
+            </div>
+          </div>
         </div>
+
+        {/* Project Stats */}
         <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="text-3xl font-bold text-red-600">{inventoryStats.outOfStockItems}</div>
-          <div className="text-sm text-gray-600">Out of Stock</div>
+          <div className="flex items-center">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <span className="text-2xl">🏗️</span>
+            </div>
+            <div className="ml-4">
+              <div className="text-2xl font-bold text-green-600">{projectStats.totalProjects}</div>
+              <div className="text-sm text-gray-600">Total Projects</div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <span className="text-2xl">⚡</span>
+            </div>
+            <div className="ml-4">
+              <div className="text-2xl font-bold text-purple-600">{projectStats.ongoingProjects}</div>
+              <div className="text-sm text-gray-600">Active Projects</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Detailed Stats Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Inventory Overview */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <span className="text-2xl mr-2">📦</span>
+            Inventory Overview
+          </h3>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
+              <div>
+                <div className="font-medium text-gray-900">Total Items</div>
+                <div className="text-sm text-gray-500">All inventory items</div>
+              </div>
+              <div className="text-2xl font-bold text-blue-600">{inventoryStats.totalItems}</div>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
+              <div>
+                <div className="font-medium text-gray-900">Low Stock Items</div>
+                <div className="text-sm text-gray-500">Items below minimum stock</div>
+              </div>
+              <div className="text-2xl font-bold text-orange-600">{inventoryStats.lowStockItems}</div>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
+              <div>
+                <div className="font-medium text-gray-900">Out of Stock</div>
+                <div className="text-sm text-gray-500">Items with zero stock</div>
+              </div>
+              <div className="text-2xl font-bold text-red-600">{inventoryStats.outOfStockItems}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Project Overview */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <span className="text-2xl mr-2">🏗️</span>
+            Project Overview
+          </h3>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
+              <div>
+                <div className="font-medium text-gray-900">To Start</div>
+                <div className="text-sm text-gray-500">Projects ready to begin</div>
+              </div>
+              <div className="text-2xl font-bold text-gray-600">{projectStats.toStartProjects}</div>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
+              <div>
+                <div className="font-medium text-gray-900">Ongoing</div>
+                <div className="text-sm text-gray-500">Active projects</div>
+              </div>
+              <div className="text-2xl font-bold text-blue-600">{projectStats.ongoingProjects}</div>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
+              <div>
+                <div className="font-medium text-gray-900">Completed</div>
+                <div className="text-sm text-gray-500">Finished projects</div>
+              </div>
+              <div className="text-2xl font-bold text-green-600">{projectStats.completedProjects}</div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Quick Actions */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link href="/inventory" className="bg-blue-600 text-white text-center px-4 py-3 rounded-md hover:bg-blue-700 transition-colors">
-            Manage Inventory
+            📦 Manage Inventory
           </Link>
-          <Link href="/inventory" className="bg-green-600 text-white text-center px-4 py-3 rounded-md hover:bg-green-700 transition-colors">
-            Add New Item
+          <Link href="/projects" className="bg-green-600 text-white text-center px-4 py-3 rounded-md hover:bg-green-700 transition-colors">
+            🏗️ Manage Projects
+          </Link>
+          <Link href="/inventory" className="bg-orange-600 text-white text-center px-4 py-3 rounded-md hover:bg-orange-700 transition-colors">
+            ➕ Add Inventory Item
+          </Link>
+          <Link href="/projects" className="bg-purple-600 text-white text-center px-4 py-3 rounded-md hover:bg-purple-700 transition-colors">
+            ➕ Create Project
           </Link>
         </div>
       </div>
 
-      {/* Recent Activity */}
+      {/* System Status */}
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-        <div className="space-y-3">
-          <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">System Status</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex items-center p-3 bg-green-50 rounded-lg">
+            <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
             <div>
-              <div className="font-medium">Portland Cement 50kg</div>
-              <div className="text-sm text-gray-500">Stock added: +100 bags</div>
+              <div className="font-medium text-green-900">Database</div>
+              <div className="text-sm text-green-700">Connected</div>
             </div>
-            <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">IN</span>
           </div>
-          <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
+          <div className="flex items-center p-3 bg-green-50 rounded-lg">
+            <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
             <div>
-              <div className="font-medium">Steel Reinforcement 12mm</div>
-              <div className="text-sm text-gray-500">Stock used: -25 tonnes</div>
+              <div className="font-medium text-green-900">API</div>
+              <div className="text-sm text-green-700">Online</div>
             </div>
-            <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">OUT</span>
+          </div>
+          <div className="flex items-center p-3 bg-green-50 rounded-lg">
+            <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+            <div>
+              <div className="font-medium text-green-900">Authentication</div>
+              <div className="text-sm text-green-700">Active</div>
+            </div>
           </div>
         </div>
       </div>
