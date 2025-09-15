@@ -61,9 +61,10 @@ export default function UserNav() {
   }, [user]);
 
   const getRoleBasedNavItems = () => {
-    // All roles now only see inventory
+    // All roles can see inventory and projects
     return [
-      { href: '/inventory', label: 'Inventory' }
+      { href: '/inventory', label: 'Inventory' },
+      { href: '/projects', label: 'Projects' }
     ];
   };
 

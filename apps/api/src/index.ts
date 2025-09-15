@@ -6,6 +6,7 @@ import { prisma } from '@tms/db/client';
 import health from './routes/health.js';
 import auth from './routes/auth.js';
 import inventory from './routes/inventory.js';
+import projects from './routes/projects.js';
 import upload from './routes/upload/index.js';
 
 const app = express();
@@ -57,6 +58,7 @@ app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use('/api', health);
 app.use('/api/auth', auth);
 app.use('/api/inventory', inventory);
+app.use('/api/projects', projects);
 app.use('/api/upload', upload);
 
 const port = Number(process.env.PORT) || 4000;

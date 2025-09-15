@@ -21,6 +21,8 @@ model User {
 
   // Relations
   inventoryLogs   InventoryLog[]
+  createdProjects Project[]
+  uploadedDocuments ProjectDocument[]
 
   @@map("users")
 }
@@ -104,6 +106,8 @@ enum DocumentCategory {
   POLICIES
   PROCEDURES
   TEMPLATES
+  PROJECT_DOCUMENTS
+  BOQ_DOCUMENTS
   OTHER
 }
 
@@ -114,4 +118,149 @@ enum DocumentType {
   JPG
   JPEG
   PNG
+}
+
+// Project Management
+model Project {
+  id          String        @id @default(cuid())
+  title       String
+  description String?
+  status      ProjectStatus @default(TO_START)
+  startDate   DateTime?
+  endDate     DateTime?
+  estimatedDuration Int?    // in weeks
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  createdBy   String
+
+  // Relations
+  preliminaryDocuments ProjectDocument[]
+  stakeholders        ProjectStakeholder[]
+  boqDocuments       ProjectDocument[]
+  procurementItems   ProcurementItem[]
+  projectPhases      ProjectPhase[]
+  createdByUser      User @relation(fields: [createdBy], references: [id])
+
+  @@map("projects")
+}
+
+enum ProjectStatus {
+  TO_START
+  ONGOING
+  COMPLETED
+}
+
+model ProjectDocument {
+  id          String          @id @default(cuid())
+  projectId   String
+  name        String
+  description String?
+  category    ProjectDocumentCategory
+  type        DocumentType
+  size        Int
+  url         String
+  filePath    String
+  uploadedBy  String
+  uploadedAt  DateTime        @default(now())
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  // Relations
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploadedByUser User @relation(fields: [uploadedBy], references: [id])
+
+  @@map("project_documents")
+}
+
+enum ProjectDocumentCategory {
+  LETTER_OF_AWARD
+  ACCEPTANCE_OF_AWARD
+  PERFORMANCE_BOND
+  CONTRACT_SIGNING
+  BOQ_DOCUMENT
+  SAMPLE_APPROVAL
+  OTHER
+}
+
+model ProjectStakeholder {
+  id          String      @id @default(cuid())
+  projectId   String
+  name        String
+  email       String?
+  phone       String?
+  location    String?
+  role        StakeholderRole
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_stakeholders")
+}
+
+enum StakeholderRole {
+  MAIN_CONTRACTOR
+  CLIENT
+  CONSULTANT
+  STRUCTURAL_ENGINEER
+  ARCHITECT
+  QUANTITY_SURVEYOR
+  SUB_CONTRACTOR
+  LAW_FIRM
+}
+
+model ProcurementItem {
+  id          String   @id @default(cuid())
+  projectId   String
+  itemName    String
+  description String?
+  quantity    Int
+  unit        String
+  estimatedCost Decimal? @db.Decimal(15, 2)
+  supplierId  String?
+  actualCost  Decimal? @db.Decimal(15, 2)
+  status      ProcurementStatus @default(PENDING)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("procurement_items")
+}
+
+enum ProcurementStatus {
+  PENDING
+  QUOTED
+  APPROVED
+  ORDERED
+  DELIVERED
+}
+
+model ProjectPhase {
+  id          String   @id @default(cuid())
+  projectId   String
+  phaseName   String
+  description String?
+  startDate   DateTime?
+  endDate     DateTime?
+  status      PhaseStatus @default(PLANNED)
+  weekNumber  Int
+  tasks       String[] @default([])
+  materials   String[] @default([])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_phases")
+}
+
+enum PhaseStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  DELAYED
 }
