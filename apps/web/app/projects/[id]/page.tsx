@@ -462,7 +462,7 @@ export default function ProjectDetailsPage() {
             <div>
               <label className="block text-sm text-gray-700 mb-1">Category</label>
               <select
-                className="w-full border rounded-md px-3 py-2"
+                className="w-full text-gray-900 border rounded-md px-3 py-2"
                 value={category}
                 onChange={(e) => setCategory(e.target.value as ProjectDocument["category"])}
               >
@@ -475,11 +475,11 @@ export default function ProjectDetailsPage() {
             </div>
             <div>
               <label className="block text-sm text-gray-700 mb-1">Name (optional)</label>
-              <input className="w-full border rounded-md px-3 py-2" value={name} onChange={(e) => setName(e.target.value)} />
+              <input className="w-full text-gray-900 border rounded-md px-3 py-2" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div>
               <label className="block text-sm text-gray-700 mb-1">Description (optional)</label>
-              <textarea className="w-full border rounded-md px-3 py-2" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
+              <textarea className="w-full text-gray-900 border rounded-md px-3 py-2" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
             </div>
             <div>
               <label className="block text-sm text-gray-700 mb-1">Files</label>
@@ -488,6 +488,7 @@ export default function ProjectDetailsPage() {
                 multiple
                 accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                 onChange={(e) => setFiles(e.target.files)}
+                className="w-full text-gray-900"
               />
             </div>
             <button
@@ -539,7 +540,7 @@ export default function ProjectDetailsPage() {
           <form onSubmit={onUploadBOQ} className="space-y-3">
             <div>
               <label className="block text-sm text-gray-700 mb-1">Files</label>
-              <input type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={(e) => setBoqFiles(e.target.files)} />
+              <input type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={(e) => setBoqFiles(e.target.files)} className="w-full text-gray-900"/>
             </div>
             {boqError && <div className="text-sm text-red-600">{boqError}</div>}
             {boqSuccess && <div className="text-sm text-green-700">{boqSuccess}</div>}
@@ -573,8 +574,8 @@ export default function ProjectDetailsPage() {
         <div className="bg-white rounded-lg shadow p-5">
           <h2 className="text-lg font-semibold text-gray-900 mb-3">Add Stakeholder</h2>
           <form onSubmit={addStakeholder} className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <input className="border rounded-md px-3 py-2" placeholder="Name" value={newStakeholder.name} onChange={(e) => setNewStakeholder({ ...newStakeholder, name: e.target.value })} />
-            <select className="border rounded-md px-3 py-2" value={newStakeholder.role} onChange={(e) => setNewStakeholder({ ...newStakeholder, role: e.target.value })}>
+            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Name" value={newStakeholder.name} onChange={(e) => setNewStakeholder({ ...newStakeholder, name: e.target.value })} />
+            <select className="border text-gray-900 rounded-md px-3 py-2" value={newStakeholder.role} onChange={(e) => setNewStakeholder({ ...newStakeholder, role: e.target.value })}>
               <option>MAIN_CONTRACTOR</option>
               <option>CLIENT</option>
               <option>CONSULTANT</option>
@@ -584,9 +585,9 @@ export default function ProjectDetailsPage() {
               <option>SUB_CONTRACTOR</option>
               <option>LAW_FIRM</option>
             </select>
-            <input className="border rounded-md px-3 py-2" placeholder="Email" value={newStakeholder.email} onChange={(e) => setNewStakeholder({ ...newStakeholder, email: e.target.value })} />
-            <input className="border rounded-md px-3 py-2" placeholder="Phone" value={newStakeholder.phone} onChange={(e) => setNewStakeholder({ ...newStakeholder, phone: e.target.value })} />
-            <input className="border rounded-md px-3 py-2 md:col-span-2" placeholder="Location" value={newStakeholder.location} onChange={(e) => setNewStakeholder({ ...newStakeholder, location: e.target.value })} />
+            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Email" value={newStakeholder.email} onChange={(e) => setNewStakeholder({ ...newStakeholder, email: e.target.value })} />
+            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Phone" value={newStakeholder.phone} onChange={(e) => setNewStakeholder({ ...newStakeholder, phone: e.target.value })} />
+            <input className="border text-gray-900 rounded-md px-3 py-2 md:col-span-2" placeholder="Location" value={newStakeholder.location} onChange={(e) => setNewStakeholder({ ...newStakeholder, location: e.target.value })} />
             <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors md:col-span-2">Add Stakeholder</button>
           </form>
         </div>
@@ -616,7 +617,7 @@ export default function ProjectDetailsPage() {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2 text-sm">
               <span className="text-gray-600">Filter:</span>
-              <select className="border rounded px-2 py-1" value={procStatusFilter} onChange={(e)=>setProcStatusFilter(e.target.value as 'ALL' | ProcurementStatus)}>
+              <select className="border text-gray-900 rounded px-2 py-1" value={procStatusFilter} onChange={(e)=>setProcStatusFilter(e.target.value as 'ALL' | ProcurementStatus)}>
                 <option value="ALL">All</option>
                 <option value="PENDING">Pending</option>
                 <option value="QUOTED">Quoted</option>
@@ -628,11 +629,11 @@ export default function ProjectDetailsPage() {
             <button onClick={exportProcurementCSV} className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1 rounded">Export CSV</button>
           </div>
           <form onSubmit={addProcurement} className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-            <input className="border rounded-md px-3 py-2" placeholder="Item name" value={newProc.itemName} onChange={(e) => setNewProc({ ...newProc, itemName: e.target.value })} />
-            <input className="border rounded-md px-3 py-2" placeholder="Quantity" type="number" min={1} value={newProc.quantity} onChange={(e) => setNewProc({ ...newProc, quantity: Number(e.target.value) })} />
-            <input className="border rounded-md px-3 py-2" placeholder="Unit" value={newProc.unit} onChange={(e) => setNewProc({ ...newProc, unit: e.target.value })} />
-            <input className="border rounded-md px-3 py-2" placeholder="Estimated Cost" value={newProc.estimatedCost} onChange={(e) => setNewProc({ ...newProc, estimatedCost: e.target.value })} />
-            <input className="border rounded-md px-3 py-2 md:col-span-2" placeholder="Description (optional)" value={newProc.description} onChange={(e) => setNewProc({ ...newProc, description: e.target.value })} />
+            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Item name" value={newProc.itemName} onChange={(e) => setNewProc({ ...newProc, itemName: e.target.value })} />
+            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Quantity" type="number" min={1} value={newProc.quantity} onChange={(e) => setNewProc({ ...newProc, quantity: Number(e.target.value) })} />
+            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Unit" value={newProc.unit} onChange={(e) => setNewProc({ ...newProc, unit: e.target.value })} />
+            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Estimated Cost" value={newProc.estimatedCost} onChange={(e) => setNewProc({ ...newProc, estimatedCost: e.target.value })} />
+            <input className="border text-gray-900 rounded-md px-3 py-2 md:col-span-2" placeholder="Description (optional)" value={newProc.description} onChange={(e) => setNewProc({ ...newProc, description: e.target.value })} />
             <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors md:col-span-2">Add Item</button>
           </form>
           <div className="text-sm text-gray-600 mb-2">Assess recommended suppliers and costs below. You can export a CSV for the chairman.</div>
