@@ -39,6 +39,9 @@ export default function ProjectsPage() {
   const [error, setError] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'ALL'|'TO_START'|'ONGOING'|'COMPLETED'>('ALL');
+  const [search, setSearch] = useState('');
+  const [updatingProjectId, setUpdatingProjectId] = useState<string | null>(null);
+  const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
   const [newProject, setNewProject] = useState({
     title: '',
     description: '',
@@ -132,6 +135,53 @@ export default function ProjectsPage() {
     return { total: projects.length, toStart: toStartCount, ongoing: ongoingCount, completed: completedCount };
   }, [projects]);
 
+  const visibleProjects = useMemo(() => {
+    const byStatus = projects.filter(p => statusFilter === 'ALL' ? true : p.status === statusFilter);
+    const q = search.trim().toLowerCase();
+    if (!q) return byStatus;
+    return byStatus.filter(p =>
+      p.title.toLowerCase().includes(q) ||
+      (p.description || '').toLowerCase().includes(q)
+    );
+  }, [projects, statusFilter, search]);
+
+  const updateProjectStatus = async (id: string, status: 'TO_START'|'ONGOING'|'COMPLETED') => {
+    const token = localStorage.getItem('tms_token');
+    if (!token) return;
+    try {
+      setUpdatingProjectId(id);
+      const res = await fetch(getApiUrl(`/api/projects/${id}`), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status })
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setProjects(prev => prev.map(p => p.id === id ? { ...p, status: updated.status } : p));
+      }
+    } finally {
+      setUpdatingProjectId(null);
+    }
+  };
+
+  const deleteProject = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this project? This cannot be undone.')) return;
+    const token = localStorage.getItem('tms_token');
+    if (!token) return;
+    try {
+      setDeletingProjectId(id);
+      const res = await fetch(getApiUrl(`/api/projects/${id}`), {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setProjects(prev => prev.filter(p => p.id !== id));
+      }
+    } finally {
+      setDeletingProjectId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -164,8 +214,8 @@ export default function ProjectsPage() {
           </div>
         )}
 
-        {/* Overview Stats and Filter */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+        {/* Overview Stats and Controls */}
+        <div className="grid grid-cols-1 md:grid-cols-7 gap-4 mb-8">
           <div className="bg-white rounded-lg shadow p-4">
             <div className="text-sm text-gray-600">Total Projects</div>
             <div className="text-2xl font-bold text-gray-900">{total}</div>
@@ -182,7 +232,7 @@ export default function ProjectsPage() {
             <div className="text-sm text-gray-600">Completed</div>
             <div className="text-2xl font-bold text-green-600">{completed}</div>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-lg shadow p-4 md:col-span-2">
             <div className="text-sm text-gray-600 mb-1">Filter by status</div>
             <select
               className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900"
@@ -194,6 +244,15 @@ export default function ProjectsPage() {
               <option value="ONGOING">Ongoing</option>
               <option value="COMPLETED">Completed</option>
             </select>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4 md:col-span-2">
+            <div className="text-sm text-gray-600 mb-1">Search</div>
+            <input
+              className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900"
+              placeholder="Search by title or description"
+              value={search}
+              onChange={(e)=> setSearch(e.target.value)}
+            />
           </div>
         </div>
 
@@ -266,17 +325,27 @@ export default function ProjectsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects
-              .filter(p => statusFilter === 'ALL' ? true : p.status === statusFilter)
-              .map((project) => (
+            {visibleProjects.map((project) => (
               <div key={project.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
                 <div className="flex justify-between items-start mb-4">
                   <h3 className="text-lg font-semibold text-gray-900 truncate">
                     {project.title}
                   </h3>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
-                    {getStatusText(project.status)}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
+                      {getStatusText(project.status)}
+                    </span>
+                    <select
+                      className="border border-gray-300 rounded px-2 py-1 text-xs"
+                      defaultValue={project.status}
+                      onChange={(e)=> updateProjectStatus(project.id, e.target.value as any)}
+                      disabled={updatingProjectId === project.id}
+                    >
+                      <option value="TO_START">To Start</option>
+                      <option value="ONGOING">Ongoing</option>
+                      <option value="COMPLETED">Completed</option>
+                    </select>
+                  </div>
                 </div>
                 
                 {project.description && (
@@ -302,6 +371,13 @@ export default function ProjectsPage() {
                   >
                     View Details
                   </Link>
+                  <button
+                    onClick={() => deleteProject(project.id)}
+                    className="px-3 py-2 text-sm bg-red-50 text-red-700 rounded-md hover:bg-red-100 disabled:opacity-60"
+                    disabled={deletingProjectId === project.id}
+                  >
+                    {deletingProjectId === project.id ? 'Deleting...' : 'Delete'}
+                  </button>
                 </div>
               </div>
             ))}
