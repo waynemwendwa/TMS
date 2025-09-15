@@ -18,7 +18,14 @@ interface Project {
     name: string;
     email: string;
   };
-  stakeholders: any[];
+  stakeholders: {
+    id: string;
+    name: string;
+    email?: string;
+    phone?: string;
+    location?: string;
+    role: string;
+  }[];
   _count: {
     documents: number;
     procurementItems: number;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getApiUrl } from '../../lib/config';
 
 // Office Document Interface
@@ -111,7 +111,7 @@ export default function InventoryPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [uploadingFiles, setUploadingFiles] = useState(false);
 
-  const fetchAllData = async () => {
+  const fetchAllData = useCallback(async () => {
     setLoading(true);
     try {
       // Fetch inventory data from the actual API
@@ -163,11 +163,11 @@ export default function InventoryPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchAllData();
-  }, []);
+  }, [fetchAllData]);
 
   const fetchOfficeDocuments = async () => {
     try {
