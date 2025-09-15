@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { getApiUrl } from '../../lib/config';
 import Link from 'next/link';
 
@@ -38,6 +38,7 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'ALL'|'TO_START'|'ONGOING'|'COMPLETED'>('ALL');
   const [newProject, setNewProject] = useState({
     title: '',
     description: '',
@@ -124,6 +125,13 @@ export default function ProjectsPage() {
     }
   };
 
+  const { total, toStart, ongoing, completed } = useMemo(() => {
+    const toStartCount = projects.filter(p => p.status === 'TO_START').length;
+    const ongoingCount = projects.filter(p => p.status === 'ONGOING').length;
+    const completedCount = projects.filter(p => p.status === 'COMPLETED').length;
+    return { total: projects.length, toStart: toStartCount, ongoing: ongoingCount, completed: completedCount };
+  }, [projects]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -155,6 +163,39 @@ export default function ProjectsPage() {
             {error}
           </div>
         )}
+
+        {/* Overview Stats and Filter */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="text-sm text-gray-600">Total Projects</div>
+            <div className="text-2xl font-bold text-gray-900">{total}</div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="text-sm text-gray-600">To Start</div>
+            <div className="text-2xl font-bold text-yellow-600">{toStart}</div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="text-sm text-gray-600">Ongoing</div>
+            <div className="text-2xl font-bold text-blue-600">{ongoing}</div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="text-sm text-gray-600">Completed</div>
+            <div className="text-2xl font-bold text-green-600">{completed}</div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="text-sm text-gray-600 mb-1">Filter by status</div>
+            <select
+              className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900"
+              value={statusFilter}
+              onChange={(e)=> setStatusFilter(e.target.value as any)}
+            >
+              <option value="ALL">All</option>
+              <option value="TO_START">To Start</option>
+              <option value="ONGOING">Ongoing</option>
+              <option value="COMPLETED">Completed</option>
+            </select>
+          </div>
+        </div>
 
         {/* Create Project Form */}
         {showCreateForm && (
@@ -225,7 +266,9 @@ export default function ProjectsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects.map((project) => (
+            {projects
+              .filter(p => statusFilter === 'ALL' ? true : p.status === statusFilter)
+              .map((project) => (
               <div key={project.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
                 <div className="flex justify-between items-start mb-4">
                   <h3 className="text-lg font-semibold text-gray-900 truncate">

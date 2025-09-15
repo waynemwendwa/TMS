@@ -338,3 +338,176 @@ router.delete('/documents/:docId', requireAuth, async (req: Request, res: Respon
     res.status(500).json({ error: 'Failed to delete project document' });
   }
 });
+
+// ---- Procurement Items ----
+
+// List procurement items for a project
+router.get('/:id/procurements', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const items = await prisma.procurementItem.findMany({
+      where: { projectId: id },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(items);
+  } catch (error) {
+    console.error('Error fetching procurement items:', error);
+    res.status(500).json({ error: 'Failed to fetch procurement items' });
+  }
+});
+
+// Create procurement item
+router.post('/:id/procurements', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { itemName, description, quantity, unit, estimatedCost } = req.body as {
+      itemName: string;
+      description?: string;
+      quantity: number;
+      unit: string;
+      estimatedCost?: string;
+    };
+
+    if (!itemName || !quantity || !unit) {
+      return res.status(400).json({ error: 'itemName, quantity and unit are required' });
+    }
+
+    const created = await prisma.procurementItem.create({
+      data: {
+        projectId: id,
+        itemName,
+        description,
+        quantity: Number(quantity),
+        unit,
+        estimatedCost: estimatedCost ? new prisma.Prisma.Decimal(estimatedCost) : undefined,
+      }
+    });
+    res.status(201).json(created);
+  } catch (error) {
+    console.error('Error creating procurement item:', error);
+    res.status(500).json({ error: 'Failed to create procurement item' });
+  }
+});
+
+// Update procurement item
+router.put('/procurements/:procurementId', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { procurementId } = req.params;
+    const { itemName, description, quantity, unit, estimatedCost, status, actualCost, supplierId } = req.body as any;
+
+    const updated = await prisma.procurementItem.update({
+      where: { id: procurementId },
+      data: {
+        itemName,
+        description,
+        quantity: quantity !== undefined ? Number(quantity) : undefined,
+        unit,
+        estimatedCost: estimatedCost !== undefined ? new prisma.Prisma.Decimal(estimatedCost) : undefined,
+        actualCost: actualCost !== undefined ? new prisma.Prisma.Decimal(actualCost) : undefined,
+        supplierId,
+        status
+      }
+    });
+    res.json(updated);
+  } catch (error) {
+    console.error('Error updating procurement item:', error);
+    res.status(500).json({ error: 'Failed to update procurement item' });
+  }
+});
+
+// Delete procurement item
+router.delete('/procurements/:procurementId', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { procurementId } = req.params;
+    await prisma.procurementItem.delete({ where: { id: procurementId } });
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting procurement item:', error);
+    res.status(500).json({ error: 'Failed to delete procurement item' });
+  }
+});
+
+// ---- Project Phases ----
+
+// List phases for a project
+router.get('/:id/phases', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const phases = await prisma.projectPhase.findMany({
+      where: { projectId: id },
+      orderBy: { weekNumber: 'asc' }
+    });
+    res.json(phases);
+  } catch (error) {
+    console.error('Error fetching project phases:', error);
+    res.status(500).json({ error: 'Failed to fetch project phases' });
+  }
+});
+
+// Create phase
+router.post('/:id/phases', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { phaseName, description, startDate, endDate, status, weekNumber, tasks, materials } = req.body as any;
+
+    if (!phaseName || weekNumber === undefined) {
+      return res.status(400).json({ error: 'phaseName and weekNumber are required' });
+    }
+
+    const created = await prisma.projectPhase.create({
+      data: {
+        projectId: id,
+        phaseName,
+        description,
+        startDate: startDate ? new Date(startDate) : undefined,
+        endDate: endDate ? new Date(endDate) : undefined,
+        status,
+        weekNumber: Number(weekNumber),
+        tasks: Array.isArray(tasks) ? tasks : tasks ? String(tasks).split(',').map((s) => s.trim()).filter(Boolean) : [],
+        materials: Array.isArray(materials) ? materials : materials ? String(materials).split(',').map((s) => s.trim()).filter(Boolean) : []
+      }
+    });
+    res.status(201).json(created);
+  } catch (error) {
+    console.error('Error creating project phase:', error);
+    res.status(500).json({ error: 'Failed to create project phase' });
+  }
+});
+
+// Update phase
+router.put('/phases/:phaseId', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { phaseId } = req.params;
+    const { phaseName, description, startDate, endDate, status, weekNumber, tasks, materials } = req.body as any;
+
+    const updated = await prisma.projectPhase.update({
+      where: { id: phaseId },
+      data: {
+        phaseName,
+        description,
+        startDate: startDate ? new Date(startDate) : undefined,
+        endDate: endDate ? new Date(endDate) : undefined,
+        status,
+        weekNumber: weekNumber !== undefined ? Number(weekNumber) : undefined,
+        tasks: tasks !== undefined ? (Array.isArray(tasks) ? tasks : String(tasks).split(',').map((s) => s.trim()).filter(Boolean)) : undefined,
+        materials: materials !== undefined ? (Array.isArray(materials) ? materials : String(materials).split(',').map((s) => s.trim()).filter(Boolean)) : undefined
+      }
+    });
+    res.json(updated);
+  } catch (error) {
+    console.error('Error updating project phase:', error);
+    res.status(500).json({ error: 'Failed to update project phase' });
+  }
+});
+
+// Delete phase
+router.delete('/phases/:phaseId', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { phaseId } = req.params;
+    await prisma.projectPhase.delete({ where: { id: phaseId } });
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting project phase:', error);
+    res.status(500).json({ error: 'Failed to delete project phase' });
+  }
+});
