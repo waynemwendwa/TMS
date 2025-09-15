@@ -237,7 +237,7 @@ export default function ProjectsPage() {
             <select
               className="w-full border border-gray-300 rounded px-3 py-2 text-gray-900"
               value={statusFilter}
-              onChange={(e)=> setStatusFilter(e.target.value as any)}
+              onChange={(e)=> setStatusFilter(e.target.value as 'ALL'|'TO_START'|'ONGOING'|'COMPLETED')}
             >
               <option value="ALL">All</option>
               <option value="TO_START">To Start</option>
@@ -338,7 +338,7 @@ export default function ProjectsPage() {
                     <select
                       className="border border-gray-300 rounded px-2 py-1 text-xs"
                       defaultValue={project.status}
-                      onChange={(e)=> updateProjectStatus(project.id, e.target.value as any)}
+                      onChange={(e)=> updateProjectStatus(project.id, e.target.value as 'TO_START'|'ONGOING'|'COMPLETED')}
                       disabled={updatingProjectId === project.id}
                     >
                       <option value="TO_START">To Start</option>

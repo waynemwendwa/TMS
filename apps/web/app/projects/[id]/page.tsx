@@ -34,6 +34,36 @@ type ProjectDocument = {
   documentType: string; // "preliminary" | "boq"
 };
 
+type ProcurementStatus = "PENDING" | "QUOTED" | "APPROVED" | "ORDERED" | "DELIVERED";
+type ProcurementItem = {
+  id: string;
+  projectId: string;
+  itemName: string;
+  description?: string;
+  quantity: number;
+  unit: string;
+  estimatedCost?: string | number | null;
+  supplierId?: string | null;
+  actualCost?: string | number | null;
+  status: ProcurementStatus;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+type PhaseStatus = "PLANNED" | "IN_PROGRESS" | "COMPLETED" | "DELAYED";
+type ProjectPhase = {
+  id: string;
+  projectId: string;
+  phaseName: string;
+  description?: string;
+  startDate?: string | null;
+  endDate?: string | null;
+  status: PhaseStatus;
+  weekNumber: number;
+  tasks: string[];
+  materials: string[];
+};
+
 export default function ProjectDetailsPage() {
   const params = useParams();
   const projectId = useMemo(() => String(params?.id || ""), [params]);
@@ -70,10 +100,10 @@ export default function ProjectDetailsPage() {
   const [boqSuccess, setBoqSuccess] = useState<string | null>(null);
 
   // Procurement state
-  const [procurements, setProcurements] = useState<any[]>([]);
+  const [procurements, setProcurements] = useState<ProcurementItem[]>([]);
   const [newProc, setNewProc] = useState({ itemName: "", description: "", quantity: 1, unit: "units", estimatedCost: "" });
   const [updatingProcId, setUpdatingProcId] = useState<string | null>(null);
-  const [procStatusFilter, setProcStatusFilter] = useState<string>('ALL');
+  const [procStatusFilter, setProcStatusFilter] = useState<'ALL' | ProcurementStatus>('ALL');
   const supplierSummary = useMemo(() => {
     const map: Record<string, { supplier: string; items: number; estTotal: number; actTotal: number }>= {};
     for (const p of procurements) {
@@ -89,12 +119,12 @@ export default function ProjectDetailsPage() {
   }, [procurements]);
 
   // Phases state
-  const [phases, setPhases] = useState<any[]>([]);
+  const [phases, setPhases] = useState<ProjectPhase[]>([]);
   const [newPhase, setNewPhase] = useState({ phaseName: "", description: "", weekNumber: 1, status: "PLANNED", startDate: "", endDate: "", tasks: "", materials: "" });
   const [stakeholderError, setStakeholderError] = useState<string | null>(null);
   const [procError, setProcError] = useState<string | null>(null);
   const [phaseError, setPhaseError] = useState<string | null>(null);
-  const [phaseStatusFilter, setPhaseStatusFilter] = useState<string>('ALL');
+  const [phaseStatusFilter, setPhaseStatusFilter] = useState<'ALL' | PhaseStatus>('ALL');
   const [updatingPhaseId, setUpdatingPhaseId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -106,7 +136,7 @@ export default function ProjectDetailsPage() {
       setError(null);
       try {
         const tokenHeader = { headers: { Authorization: `Bearer ${token}` } } as const;
-        const [projRes, docsRes, boqRes, stakeholdersRes, procsRes, phasesRes] = await Promise.all([
+        const [projRes, docsRes, boqRes, procsRes, phasesRes] = await Promise.all([
           fetch(getApiUrl(`/api/projects/${projectId}`), {
             ...tokenHeader
           }),
@@ -114,9 +144,6 @@ export default function ProjectDetailsPage() {
             ...tokenHeader
           }),
           fetch(getApiUrl(`/api/projects/${projectId}/documents?documentType=boq`), {
-            ...tokenHeader
-          }),
-          fetch(getApiUrl(`/api/projects/${projectId}`), {
             ...tokenHeader
           }),
           fetch(getApiUrl(`/api/projects/${projectId}/procurements`), {
@@ -145,7 +172,7 @@ export default function ProjectDetailsPage() {
         if (phasesRes.ok) {
           setPhases(await phasesRes.json());
         }
-      } catch (e) {
+      } catch {
         setError("Failed to load project");
       } finally {
         setLoading(false);
@@ -203,7 +230,7 @@ export default function ProjectDetailsPage() {
         const msg = await res.text();
         setPrelimError(msg || 'Upload failed.');
       }
-    } catch (err) {
+    } catch {
       setPrelimError('Upload failed. Please try again.');
     } finally {
       setUploading(false);
@@ -309,7 +336,10 @@ export default function ProjectDetailsPage() {
     }
   };
 
-  const updateProcurement = async (id: string, patch: any) => {
+  const updateProcurement = async (
+    id: string,
+    patch: Partial<Pick<ProcurementItem, 'supplierId' | 'estimatedCost' | 'actualCost' | 'status'>>
+  ) => {
     const token = typeof window !== "undefined" ? localStorage.getItem("tms_token") : null;
     if (!token) return;
     try {
@@ -364,7 +394,16 @@ export default function ProjectDetailsPage() {
     }
     const token = typeof window !== "undefined" ? localStorage.getItem("tms_token") : null;
     if (!token || !newPhase.phaseName) return;
-    const payload = { ...newPhase } as any;
+    const payload = { ...newPhase } as {
+      phaseName: string;
+      description?: string;
+      weekNumber: number;
+      status: PhaseStatus;
+      startDate?: string;
+      endDate?: string;
+      tasks?: string;
+      materials?: string;
+    };
     if (payload.tasks) payload.tasks = String(payload.tasks);
     if (payload.materials) payload.materials = String(payload.materials);
     const res = await fetch(getApiUrl(`/api/projects/${projectId}/phases`), {
@@ -379,7 +418,10 @@ export default function ProjectDetailsPage() {
     }
   };
 
-  const updatePhase = async (id: string, patch: any) => {
+  const updatePhase = async (
+    id: string,
+    patch: Partial<ProjectPhase> | { startDate?: string; endDate?: string; tasks?: string; materials?: string; status?: PhaseStatus }
+  ) => {
     const token = typeof window !== "undefined" ? localStorage.getItem("tms_token") : null;
     if (!token) return;
     try {
