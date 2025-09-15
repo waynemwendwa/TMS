@@ -616,7 +616,7 @@ export default function ProjectDetailsPage() {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2 text-sm">
               <span className="text-gray-600">Filter:</span>
-              <select className="border rounded px-2 py-1" value={procStatusFilter} onChange={(e)=>setProcStatusFilter(e.target.value)}>
+              <select className="border rounded px-2 py-1" value={procStatusFilter} onChange={(e)=>setProcStatusFilter(e.target.value as 'ALL' | ProcurementStatus)}>
                 <option value="ALL">All</option>
                 <option value="PENDING">Pending</option>
                 <option value="QUOTED">Quoted</option>
