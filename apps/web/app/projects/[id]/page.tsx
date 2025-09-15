@@ -688,7 +688,7 @@ export default function ProjectDetailsPage() {
                       <td className="p-2">
                         <select className="border rounded px-2 py-1"
                           defaultValue={p.status}
-                          onChange={(e) => updateProcurement(p.id, { status: e.target.value })}
+                          onChange={(e) => updateProcurement(p.id, { status: e.target.value as ProcurementStatus })}
                           disabled={updatingProcId === p.id}
                         >
                           <option value="PENDING">PENDING</option>
