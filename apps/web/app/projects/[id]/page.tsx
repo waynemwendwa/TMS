@@ -781,7 +781,7 @@ export default function ProjectDetailsPage() {
                 <div key={ph.id} className="p-3 border rounded-md">
                   <div className="flex items-center justify-between">
                     <div className="font-medium">Week {ph.weekNumber}: {ph.phaseName}</div>
-                    <select className="border rounded px-2 py-1 text-xs" defaultValue={ph.status} onChange={(e)=>updatePhase(ph.id, { status: e.target.value })} disabled={updatingPhaseId===ph.id}>
+                    <select className="border rounded px-2 py-1 text-xs" defaultValue={ph.status} onChange={(e)=>updatePhase(ph.id, { status: e.target.value as PhaseStatus })} disabled={updatingPhaseId===ph.id}>
                       <option>PLANNED</option>
                       <option>IN_PROGRESS</option>
                       <option>COMPLETED</option>
