@@ -15,8 +15,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
         stakeholders: true,
         _count: {
           select: {
-            preliminaryDocuments: true,
-            boqDocuments: true,
+            documents: true,
             procurementItems: true,
             projectPhases: true
           }
@@ -44,8 +43,7 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
           select: { id: true, name: true, email: true }
         },
         stakeholders: true,
-        preliminaryDocuments: true,
-        boqDocuments: true,
+        documents: true,
         procurementItems: true,
         projectPhases: {
           orderBy: { weekNumber: 'asc' }
@@ -118,8 +116,7 @@ router.put('/:id', requireAuth, async (req: Request, res: Response) => {
         stakeholders: true,
         _count: {
           select: {
-            preliminaryDocuments: true,
-            boqDocuments: true,
+            documents: true,
             procurementItems: true,
             projectPhases: true
           }

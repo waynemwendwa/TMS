@@ -48,6 +48,7 @@ CREATE TABLE "project_documents" (
     "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "documentType" TEXT NOT NULL,
 
     CONSTRAINT "project_documents_pkey" PRIMARY KEY ("id")
 );

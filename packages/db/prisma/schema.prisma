@@ -134,9 +134,8 @@ model Project {
   createdBy   String
 
   // Relations
-  preliminaryDocuments ProjectDocument[]
-  stakeholders        ProjectStakeholder[]
-  boqDocuments       ProjectDocument[]
+  documents          ProjectDocument[]
+  stakeholders       ProjectStakeholder[]
   procurementItems   ProcurementItem[]
   projectPhases      ProjectPhase[]
   createdByUser      User @relation(fields: [createdBy], references: [id])
@@ -164,6 +163,7 @@ model ProjectDocument {
   uploadedAt  DateTime        @default(now())
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
+  documentType String         // "preliminary" or "boq"
 
   // Relations
   project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)

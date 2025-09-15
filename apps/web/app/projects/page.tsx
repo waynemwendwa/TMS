@@ -20,8 +20,7 @@ interface Project {
   };
   stakeholders: any[];
   _count: {
-    preliminaryDocuments: number;
-    boqDocuments: number;
+    documents: number;
     procurementItems: number;
     projectPhases: number;
   };
@@ -239,7 +238,7 @@ export default function ProjectsPage() {
                 <div className="space-y-2 text-sm text-gray-500 mb-4">
                   <div>Created by: {project.createdByUser.name}</div>
                   <div>Stakeholders: {project.stakeholders.length}</div>
-                  <div>Documents: {project._count.preliminaryDocuments + project._count.boqDocuments}</div>
+                  <div>Documents: {project._count.documents}</div>
                   <div>Phases: {project._count.projectPhases}</div>
                   {project.estimatedDuration && (
                     <div>Duration: {project.estimatedDuration} weeks</div>
