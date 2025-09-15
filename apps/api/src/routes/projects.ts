@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '@tms/db/client';
+import { Prisma } from '@prisma/client';
 import { requireAuth } from '../middleware/auth.js';
 import multer from 'multer';
 import path from 'path';
@@ -379,7 +380,7 @@ router.post('/:id/procurements', requireAuth, async (req: Request, res: Response
         description,
         quantity: Number(quantity),
         unit,
-        estimatedCost: estimatedCost ? new prisma.Prisma.Decimal(estimatedCost) : undefined,
+        estimatedCost: estimatedCost ? new Prisma.Decimal(estimatedCost) : undefined,
       }
     });
     res.status(201).json(created);
@@ -402,8 +403,8 @@ router.put('/procurements/:procurementId', requireAuth, async (req: Request, res
         description,
         quantity: quantity !== undefined ? Number(quantity) : undefined,
         unit,
-        estimatedCost: estimatedCost !== undefined ? new prisma.Prisma.Decimal(estimatedCost) : undefined,
-        actualCost: actualCost !== undefined ? new prisma.Prisma.Decimal(actualCost) : undefined,
+        estimatedCost: estimatedCost !== undefined ? new Prisma.Decimal(estimatedCost) : undefined,
+        actualCost: actualCost !== undefined ? new Prisma.Decimal(actualCost) : undefined,
         supplierId,
         status
       }
