@@ -747,7 +747,7 @@ export default function ProjectDetailsPage() {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2 text-sm">
               <span className="text-gray-600">Filter:</span>
-              <select className="border rounded px-2 py-1" value={phaseStatusFilter} onChange={(e)=>setPhaseStatusFilter(e.target.value)}>
+              <select className="border rounded px-2 py-1" value={phaseStatusFilter} onChange={(e)=>setPhaseStatusFilter(e.target.value as 'ALL' | PhaseStatus)}>
                 <option value="ALL">All</option>
                 <option value="PLANNED">Planned</option>
                 <option value="IN_PROGRESS">In Progress</option>
