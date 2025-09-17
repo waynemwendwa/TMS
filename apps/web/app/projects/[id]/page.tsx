@@ -854,7 +854,7 @@ export default function ProjectDetailsPage() {
                 
                 {boqTemplateForm.items.length === 0 ? (
                   <div className="text-sm text-gray-500 text-center py-4 border-2 border-dashed border-gray-300 rounded-md">
-                    No items added yet. Click "Add Item" to start.
+                    No items added yet. Click &quot;Add Item&quot; to start.
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -933,7 +933,7 @@ export default function ProjectDetailsPage() {
             </form>
           ) : (
             <div className="text-sm text-gray-500 text-center py-8">
-              Click "Create Template" to start creating a BOQ template.
+              Click &quot;Create Template&quot; to start creating a BOQ template.
             </div>
           )}
         </div>
