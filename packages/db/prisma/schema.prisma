@@ -24,6 +24,7 @@ model User {
   createdProjects Project[]
   uploadedDocuments ProjectDocument[]
   createdBoqTemplates BoqTemplate[]
+  supervisorAssignments SiteSupervisorAssignment[]
 
   @@map("users")
 }
@@ -140,6 +141,8 @@ model Project {
   procurementItems   ProcurementItem[]
   projectPhases      ProjectPhase[]
   boqTemplates       BoqTemplate[]
+  orderTemplates     OrderTemplate[]
+  supervisorAssignments SiteSupervisorAssignment[]
   createdByUser      User @relation(fields: [createdBy], references: [id])
 
   @@map("projects")
@@ -302,4 +305,52 @@ model BoqTemplateItem {
   boqTemplate BoqTemplate @relation(fields: [boqTemplateId], references: [id], onDelete: Cascade)
 
   @@map("boq_template_items")
+}
+
+// Site Supervisor Assignment (limits supervisors to specific projects)
+model SiteSupervisorAssignment {
+  id        String   @id @default(cuid())
+  userId    String
+  projectId String
+  createdAt DateTime @default(now())
+
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId])
+  @@map("site_supervisor_assignments")
+}
+
+// Order Template Management (for site supervisors)
+model OrderTemplate {
+  id          String   @id @default(cuid())
+  projectId   String
+  title       String
+  description String?
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdByUser User  @relation(fields: [createdBy], references: [id])
+  items       OrderTemplateItem[]
+
+  @@map("order_templates")
+}
+
+model OrderTemplateItem {
+  id              String   @id @default(cuid())
+  orderTemplateId String
+  item            String
+  description     String?
+  quantity        Int
+  unit            String
+  rate            Decimal  @db.Decimal(15, 2)
+  amount          Decimal  @db.Decimal(15, 2)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  orderTemplate   OrderTemplate @relation(fields: [orderTemplateId], references: [id], onDelete: Cascade)
+
+  @@map("order_template_items")
 }

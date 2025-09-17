@@ -61,11 +61,51 @@ export default function UserNav() {
   }, [user]);
 
   const getRoleBasedNavItems = () => {
-    // All roles can see inventory and projects
-    return [
+    if (!user) return [];
+    
+    const baseItems = [
       { href: '/inventory', label: 'Inventory' },
       { href: '/projects', label: 'Projects' }
     ];
+
+    // Role-specific navigation
+    switch (user.role) {
+      case 'SITE_SUPERVISOR':
+        return [
+          { href: '/projects', label: 'Projects' },
+          { href: '/reports', label: 'Reports' }
+        ];
+      
+      case 'PROCUREMENT':
+      case 'FINANCE_PROCUREMENT':
+        return [
+          { href: '/inventory', label: 'Inventory' },
+          { href: '/projects', label: 'Projects' },
+          { href: '/procurement', label: 'Procurement' },
+          { href: '/suppliers', label: 'Suppliers' },
+          { href: '/reports', label: 'Reports' }
+        ];
+      
+      case 'SUPPLIER':
+        return [
+          { href: '/projects', label: 'Projects' },
+          { href: '/suppliers', label: 'My Quotes' }
+        ];
+      
+      case 'CHAIRMAN':
+      case 'CHAIRMAN_PA':
+        return [
+          { href: '/inventory', label: 'Inventory' },
+          { href: '/projects', label: 'Projects' },
+          { href: '/procurement', label: 'Procurement' },
+          { href: '/suppliers', label: 'Suppliers' },
+          { href: '/reports', label: 'Reports' },
+          { href: '/admin', label: 'Admin' }
+        ];
+      
+      default:
+        return baseItems;
+    }
   };
 
   if (loading) {

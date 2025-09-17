@@ -464,6 +464,130 @@ export default function ProjectDetailsPage() {
     }
   };
 
+  const exportBoqTemplate = (template: BoqTemplate, format: 'pdf' | 'excel') => {
+    if (format === 'pdf') {
+      exportBoqToPDF(template);
+    } else {
+      exportBoqToExcel(template);
+    }
+  };
+
+  const exportBoqToPDF = (template: BoqTemplate) => {
+    // Create a new window for PDF generation
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const totalAmount = template.items.reduce((sum, item) => sum + Number(item.amount), 0);
+    
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>BOQ - ${template.title}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .title { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
+          .subtitle { font-size: 16px; color: #666; margin-bottom: 5px; }
+          .bill-number { font-size: 14px; color: #888; }
+          .table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          .table th, .table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          .table th { background-color: #f5f5f5; font-weight: bold; }
+          .table .number { text-align: right; }
+          .total { font-weight: bold; font-size: 16px; margin-top: 20px; text-align: right; }
+          .footer { margin-top: 30px; font-size: 12px; color: #666; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="title">${template.title}</div>
+          <div class="subtitle">${template.equipmentInstallationWorks}</div>
+          <div class="bill-number">Bill Number: ${template.billNumber}</div>
+        </div>
+        
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Description</th>
+              <th>Qty</th>
+              <th>Unit</th>
+              <th>Rate (KSH)</th>
+              <th>Amount (KSH)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${template.items.map(item => `
+              <tr>
+                <td>${item.item}</td>
+                <td>${item.description || ''}</td>
+                <td class="number">${item.quantity}</td>
+                <td>${item.unit}</td>
+                <td class="number">${Number(item.rate).toFixed(2)}</td>
+                <td class="number">${Number(item.amount).toFixed(2)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        
+        <div class="total">
+          Total Amount: KSH ${totalAmount.toFixed(2)}
+        </div>
+        
+        <div class="footer">
+          <p>Generated on: ${new Date().toLocaleDateString()}</p>
+          <p>Created by: ${template.createdByUser.name}</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
+  const exportBoqToExcel = (template: BoqTemplate) => {
+    const totalAmount = template.items.reduce((sum, item) => sum + Number(item.amount), 0);
+    
+    // Create CSV content
+    const csvContent = [
+      ['BOQ Template Export'],
+      ['Title:', template.title],
+      ['Equipment Installation Works:', template.equipmentInstallationWorks],
+      ['Bill Number:', template.billNumber],
+      ['Generated on:', new Date().toLocaleDateString()],
+      ['Created by:', template.createdByUser.name],
+      [''],
+      ['Item', 'Description', 'Quantity', 'Unit', 'Rate (KSH)', 'Amount (KSH)'],
+      ...template.items.map(item => [
+        item.item,
+        item.description || '',
+        item.quantity,
+        item.unit,
+        Number(item.rate).toFixed(2),
+        Number(item.amount).toFixed(2)
+      ]),
+      ['', '', '', '', 'TOTAL:', totalAmount.toFixed(2)]
+    ];
+
+    // Convert to CSV string
+    const csvString = csvContent.map(row => 
+      row.map(cell => `"${cell}"`).join(',')
+    ).join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `BOQ_${template.billNumber}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const addStakeholder = async (e: React.FormEvent) => {
     e.preventDefault();
     setStakeholderError(null);
@@ -786,6 +910,25 @@ export default function ProjectDetailsPage() {
                       >
                         Edit
                       </button>
+                      <div className="relative group">
+                        <button className="text-green-600 hover:text-green-800 text-sm">
+                          Export ▼
+                        </button>
+                        <div className="absolute right-0 mt-1 w-32 bg-white border rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                          <button
+                            onClick={() => exportBoqTemplate(template, 'pdf')}
+                            className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            Export PDF
+                          </button>
+                          <button
+                            onClick={() => exportBoqTemplate(template, 'excel')}
+                            className="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            Export Excel
+                          </button>
+                        </div>
+                      </div>
                       <button
                         onClick={() => deleteBoqTemplate(template.id)}
                         className="text-red-600 hover:text-red-800 text-sm"

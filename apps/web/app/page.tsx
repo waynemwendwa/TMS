@@ -80,9 +80,9 @@ export default function Home() {
     fetchProjectStats();
   }, []);
 
-  // If user is logged in, show TMS dashboard
+  // If user is logged in, show role-based dashboard
   if (user) {
-    return <TMSDashboard user={user} inventoryStats={inventoryStats} projectStats={projectStats} />;
+    return <RoleBasedDashboard user={user} inventoryStats={inventoryStats} projectStats={projectStats} />;
   }
 
   // Landing page for non-logged-in users
@@ -184,6 +184,83 @@ export default function Home() {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Role-based Dashboard Router
+function RoleBasedDashboard({ user, inventoryStats, projectStats }: { user: any, inventoryStats: any, projectStats: any }) {
+  if (user.role === 'SITE_SUPERVISOR') {
+    return <SiteSupervisorDashboard user={user} inventoryStats={inventoryStats} projectStats={projectStats} />;
+  }
+
+  // Full access for Chairman and Chairman's PA; others fall back to full dashboard for now
+  return <TMSDashboard user={user} inventoryStats={inventoryStats} projectStats={projectStats} />;
+}
+
+// Limited dashboard for Site Supervisors (will refine based on your specs)
+function SiteSupervisorDashboard({ user, inventoryStats, projectStats }: { user: any, inventoryStats: any, projectStats: any }) {
+  return (
+    <div className="space-y-6">
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg shadow-lg p-6 text-white">
+        <h1 className="text-3xl font-bold mb-2">Welcome back, {user.name}</h1>
+        <p className="text-blue-100">Site Supervisor Dashboard</p>
+      </div>
+
+      {/* Key Stats (read-only overview) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <span className="text-2xl">📦</span>
+            </div>
+            <div className="ml-4">
+              <div className="text-2xl font-bold text-blue-600">{inventoryStats.totalItems}</div>
+              <div className="text-sm text-gray-600">Total Items</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-orange-100 rounded-lg">
+              <span className="text-2xl">⚠️</span>
+            </div>
+            <div className="ml-4">
+              <div className="text-2xl font-bold text-orange-600">{inventoryStats.lowStockItems}</div>
+              <div className="text-sm text-gray-600">Low Stock</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <span className="text-2xl">🏗️</span>
+            </div>
+            <div className="ml-4">
+              <div className="text-2xl font-bold text-green-600">{projectStats.ongoingProjects}</div>
+              <div className="text-sm text-gray-600">Active Projects</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Links limited */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Links</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Link href="/inventory" className="bg-blue-600 text-white text-center px-4 py-3 rounded-md hover:bg-blue-700 transition-colors">
+            📦 View Inventory
+          </Link>
+          <Link href="/projects" className="bg-green-600 text-white text-center px-4 py-3 rounded-md hover:bg-green-700 transition-colors">
+            🏗️ View Projects
+          </Link>
+          <Link href="/reports" className="bg-gray-700 text-white text-center px-4 py-3 rounded-md hover:bg-gray-800 transition-colors">
+            📑 View Reports
+          </Link>
         </div>
       </div>
     </div>

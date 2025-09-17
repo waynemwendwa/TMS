@@ -37,10 +37,33 @@ const projectUpload = multer({
   }
 });
 
+// Public: minimal project list for signup (no auth)
+router.get('/public', async (_req: Request, res: Response) => {
+  try {
+    const projects = await prisma.project.findMany({
+      select: { id: true, title: true, status: true },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(projects);
+  } catch (error) {
+    console.error('Error fetching public projects:', error);
+    res.status(500).json({ error: 'Failed to fetch projects' });
+  }
+});
+
 // Get all projects
 router.get('/', requireAuth, async (req: Request, res: Response) => {
   try {
+    // Limit site supervisors to their assignment
+    let where: any = {};
+    if (req.user?.role === 'SITE_SUPERVISOR') {
+      const assignment = await prisma.siteSupervisorAssignment.findUnique({ where: { userId: req.user.id } });
+      if (!assignment) return res.json([]);
+      where = { id: assignment.projectId };
+    }
+
     const projects = await prisma.project.findMany({
+      where,
       include: {
         createdByUser: {
           select: { id: true, name: true, email: true }
@@ -68,6 +91,12 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
 router.get('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    if (req.user?.role === 'SITE_SUPERVISOR') {
+      const assignment = await prisma.siteSupervisorAssignment.findUnique({ where: { userId: req.user.id } });
+      if (!assignment || assignment.projectId !== id) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    }
     
     const project = await prisma.project.findUnique({
       where: { id },
@@ -256,6 +285,10 @@ export default router;
 router.get('/:id/documents', requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    if (req.user?.role === 'SITE_SUPERVISOR') {
+      const assignment = await prisma.siteSupervisorAssignment.findUnique({ where: { userId: req.user.id } });
+      if (!assignment || assignment.projectId !== id) return res.status(403).json({ error: 'Access denied' });
+    }
     const { documentType, category } = req.query as { documentType?: string; category?: string };
 
     const documents = await prisma.projectDocument.findMany({
@@ -278,11 +311,15 @@ router.get('/:id/documents', requireAuth, async (req: Request, res: Response) =>
 router.post('/:id/documents', requireAuth, projectUpload.array('documents', 10), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    if (req.user?.role === 'SITE_SUPERVISOR') {
+      const assignment = await prisma.siteSupervisorAssignment.findUnique({ where: { userId: req.user.id } });
+      if (!assignment || assignment.projectId !== id) return res.status(403).json({ error: 'Access denied' });
+    }
     const { category, name, description, documentType } = req.body as {
       category?: string;
       name?: string;
       description?: string;
-      documentType?: string; // "preliminary" | "boq"
+      documentType?: string; // "preliminary" | "boq" | "order"
     };
 
     const files = req.files as Express.Multer.File[] | undefined;
@@ -346,6 +383,10 @@ router.delete('/documents/:docId', requireAuth, async (req: Request, res: Respon
 router.get('/:id/procurements', requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    if (req.user?.role === 'SITE_SUPERVISOR') {
+      const assignment = await prisma.siteSupervisorAssignment.findUnique({ where: { userId: req.user.id } });
+      if (!assignment || assignment.projectId !== id) return res.status(403).json({ error: 'Access denied' });
+    }
     const items = await prisma.procurementItem.findMany({
       where: { projectId: id },
       orderBy: { createdAt: 'desc' }
@@ -449,6 +490,10 @@ router.get('/:id/phases', requireAuth, async (req: Request, res: Response) => {
 router.post('/:id/phases', requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    if (req.user?.role === 'SITE_SUPERVISOR') {
+      const assignment = await prisma.siteSupervisorAssignment.findUnique({ where: { userId: req.user.id } });
+      if (!assignment || assignment.projectId !== id) return res.status(403).json({ error: 'Access denied' });
+    }
     const { phaseName, description, startDate, endDate, status, weekNumber, tasks, materials } = req.body as any;
 
     if (!phaseName || weekNumber === undefined) {
@@ -519,6 +564,10 @@ router.delete('/phases/:phaseId', requireAuth, async (req: Request, res: Respons
 router.get('/:id/boq-templates', requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    if (req.user?.role === 'SITE_SUPERVISOR') {
+      const assignment = await prisma.siteSupervisorAssignment.findUnique({ where: { userId: req.user.id } });
+      if (!assignment || assignment.projectId !== id) return res.status(403).json({ error: 'Access denied' });
+    }
     const templates = await prisma.boqTemplate.findMany({
       where: { projectId: id },
       include: {
@@ -568,6 +617,10 @@ router.get('/boq-templates/:templateId', requireAuth, async (req: Request, res: 
 router.post('/:id/boq-templates', requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    if (req.user?.role === 'SITE_SUPERVISOR') {
+      const assignment = await prisma.siteSupervisorAssignment.findUnique({ where: { userId: req.user.id } });
+      if (!assignment || assignment.projectId !== id) return res.status(403).json({ error: 'Access denied' });
+    }
     const { title, equipmentInstallationWorks, billNumber, items } = req.body as {
       title: string;
       equipmentInstallationWorks: string;
@@ -637,6 +690,115 @@ router.post('/:id/boq-templates', requireAuth, async (req: Request, res: Respons
   } catch (error) {
     console.error('Error creating BOQ template:', error);
     res.status(500).json({ error: 'Failed to create BOQ template' });
+  }
+});
+
+// ===== ORDER TEMPLATE ENDPOINTS =====
+
+// List order templates for a project
+router.get('/:id/order-templates', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    if (req.user?.role === 'SITE_SUPERVISOR') {
+      const assignment = await prisma.siteSupervisorAssignment.findUnique({ where: { userId: req.user.id } });
+      if (!assignment || assignment.projectId !== id) return res.status(403).json({ error: 'Access denied' });
+    }
+    const templates = await prisma.orderTemplate.findMany({
+      where: { projectId: id },
+      include: { items: true, createdByUser: { select: { id: true, name: true, email: true } } },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(templates);
+  } catch (error) {
+    console.error('Error fetching order templates:', error);
+    res.status(500).json({ error: 'Failed to fetch order templates' });
+  }
+});
+
+// Get specific order template
+router.get('/order-templates/:templateId', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { templateId } = req.params;
+    const template = await prisma.orderTemplate.findUnique({
+      where: { id: templateId },
+      include: { items: true, project: { select: { id: true, title: true } }, createdByUser: { select: { id: true, name: true, email: true } } }
+    });
+    if (!template) return res.status(404).json({ error: 'Order template not found' });
+    if (req.user?.role === 'SITE_SUPERVISOR') {
+      const assignment = await prisma.siteSupervisorAssignment.findUnique({ where: { userId: req.user.id } });
+      if (!assignment || assignment.projectId !== template.projectId) return res.status(403).json({ error: 'Access denied' });
+    }
+    res.json(template);
+  } catch (error) {
+    console.error('Error fetching order template:', error);
+    res.status(500).json({ error: 'Failed to fetch order template' });
+  }
+});
+
+// Create order template
+router.post('/:id/order-templates', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    if (req.user?.role === 'SITE_SUPERVISOR') {
+      const assignment = await prisma.siteSupervisorAssignment.findUnique({ where: { userId: req.user.id } });
+      if (!assignment || assignment.projectId !== id) return res.status(403).json({ error: 'Access denied' });
+    }
+    const { title, description, items } = req.body as { title: string; description?: string; items: Array<{ item: string; description?: string; quantity: number; unit: string; rate: number; amount: number; }>; };
+    if (!title || !items || items.length === 0) return res.status(400).json({ error: 'Title and at least one item are required' });
+    const result = await prisma.$transaction(async (tx) => {
+      const template = await tx.orderTemplate.create({ data: { projectId: id, title, description, createdBy: req.user!.id } });
+      const created = await tx.orderTemplateItem.createMany({ data: items.map(i => ({ orderTemplateId: template.id, item: i.item, description: i.description || null, quantity: i.quantity, unit: i.unit, rate: i.rate, amount: i.amount })) });
+      return { templateId: template.id, count: created.count };
+    });
+    const createdTemplate = await prisma.orderTemplate.findUnique({ where: { id: result.templateId }, include: { items: true, createdByUser: { select: { id: true, name: true, email: true } } } });
+    res.status(201).json(createdTemplate);
+  } catch (error) {
+    console.error('Error creating order template:', error);
+    res.status(500).json({ error: 'Failed to create order template' });
+  }
+});
+
+// Update order template
+router.put('/order-templates/:templateId', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { templateId } = req.params;
+    const existing = await prisma.orderTemplate.findUnique({ where: { id: templateId } });
+    if (!existing) return res.status(404).json({ error: 'Order template not found' });
+    if (req.user?.role === 'SITE_SUPERVISOR') {
+      const assignment = await prisma.siteSupervisorAssignment.findUnique({ where: { userId: req.user.id } });
+      if (!assignment || assignment.projectId !== existing.projectId) return res.status(403).json({ error: 'Access denied' });
+    }
+    const { title, description, items } = req.body as any;
+    await prisma.$transaction(async (tx) => {
+      await tx.orderTemplate.update({ where: { id: templateId }, data: { ...(title && { title }), ...(description !== undefined && { description }) } });
+      if (items) {
+        await tx.orderTemplateItem.deleteMany({ where: { orderTemplateId: templateId } });
+        await tx.orderTemplateItem.createMany({ data: items.map((i: any) => ({ orderTemplateId: templateId, item: i.item, description: i.description || null, quantity: i.quantity, unit: i.unit, rate: i.rate, amount: i.amount })) });
+      }
+    });
+    const updated = await prisma.orderTemplate.findUnique({ where: { id: templateId }, include: { items: true, createdByUser: { select: { id: true, name: true, email: true } } } });
+    res.json(updated);
+  } catch (error) {
+    console.error('Error updating order template:', error);
+    res.status(500).json({ error: 'Failed to update order template' });
+  }
+});
+
+// Delete order template
+router.delete('/order-templates/:templateId', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { templateId } = req.params;
+    const existing = await prisma.orderTemplate.findUnique({ where: { id: templateId } });
+    if (!existing) return res.status(404).json({ error: 'Order template not found' });
+    if (req.user?.role === 'SITE_SUPERVISOR') {
+      const assignment = await prisma.siteSupervisorAssignment.findUnique({ where: { userId: req.user.id } });
+      if (!assignment || assignment.projectId !== existing.projectId) return res.status(403).json({ error: 'Access denied' });
+    }
+    await prisma.orderTemplate.delete({ where: { id: templateId } });
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting order template:', error);
+    res.status(500).json({ error: 'Failed to delete order template' });
   }
 });
 
