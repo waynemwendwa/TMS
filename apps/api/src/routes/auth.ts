@@ -181,8 +181,8 @@ router.post('/signup', async (req: Request, res: Response) => {
     console.log('Body:', req.body);
     console.log('Headers:', req.headers);
     
-    const { email, name, role, password } = req.body;
-    console.log('Received data:', { email, name, role, hasPassword: !!password });
+    const { email, name, role, password, assignedProjectId } = req.body as { email: string; name: string; role: string; password: string; assignedProjectId?: string };
+    console.log('Received data:', { email, name, role, hasPassword: !!password, assignedProjectId });
     
     if (!email || !name || !role || !password) {
       console.log('Missing required fields');
@@ -207,6 +207,21 @@ router.post('/signup', async (req: Request, res: Response) => {
       data: { email, name, role, passwordHash }
     });
     console.log('User created successfully:', user.id);
+
+    // If Site Supervisor, create assignment (exactly one project)
+    if (role === 'SITE_SUPERVISOR') {
+      if (!assignedProjectId) {
+        console.log('Site Supervisor missing assignedProjectId');
+        return res.status(400).json({ error: 'assignedProjectId is required for Site Supervisor' });
+      }
+      const projectExists = await prisma.project.findUnique({ where: { id: assignedProjectId } });
+      if (!projectExists) {
+        return res.status(400).json({ error: 'Assigned project not found' });
+      }
+      await prisma.siteSupervisorAssignment.create({
+        data: { userId: user.id, projectId: assignedProjectId }
+      });
+    }
 
     console.log('Generating token...');
     const token = signToken({ id: user.id, email: user.email, role: user.role });

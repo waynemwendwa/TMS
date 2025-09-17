@@ -77,6 +77,28 @@ type BoqTemplate = {
   };
 };
 
+type OrderTemplateItem = {
+  id?: string;
+  item: string;
+  description?: string;
+  quantity: number;
+  unit: string;
+  rate: number;
+  amount: number;
+};
+
+type OrderTemplate = {
+  id: string;
+  projectId: string;
+  title: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+  items: OrderTemplateItem[];
+  createdByUser: { id: string; name: string; email: string };
+};
+
 type PhaseStatus = "PLANNED" | "IN_PROGRESS" | "COMPLETED" | "DELAYED";
 type ProjectPhase = {
   id: string;
@@ -140,6 +162,20 @@ export default function ProjectDetailsPage() {
   const [boqTemplateSuccess, setBoqTemplateSuccess] = useState<string | null>(null);
   const [boqTemplateLoading, setBoqTemplateLoading] = useState(false);
 
+  // Order template state
+  const [orderTemplates, setOrderTemplates] = useState<OrderTemplate[]>([]);
+  const [showOrderForm, setShowOrderForm] = useState(false);
+  const [orderForm, setOrderForm] = useState<{ title: string; description: string; items: OrderTemplateItem[] }>({ title: "", description: "", items: [] });
+  const [orderTemplateError, setOrderTemplateError] = useState<string | null>(null);
+  const [orderTemplateSuccess, setOrderTemplateSuccess] = useState<string | null>(null);
+  const [orderTemplateLoading, setOrderTemplateLoading] = useState(false);
+  const [orderFiles, setOrderFiles] = useState<FileList | null>(null);
+  const [orderUploading, setOrderUploading] = useState(false);
+
+  // Comparison state
+  const [compareTemplateId, setCompareTemplateId] = useState<string | null>(null);
+  const [comparisonRows, setComparisonRows] = useState<Array<{ item: string; orderQty: number; boqQty: number; alert: boolean }>>([]);
+
   // Procurement state
   const [procurements, setProcurements] = useState<ProcurementItem[]>([]);
   const [newProc, setNewProc] = useState({ itemName: "", description: "", quantity: 1, unit: "units", estimatedCost: "" });
@@ -177,7 +213,7 @@ export default function ProjectDetailsPage() {
       setError(null);
       try {
         const tokenHeader = { headers: { Authorization: `Bearer ${token}` } } as const;
-        const [projRes, docsRes, boqRes, procsRes, phasesRes, boqTemplatesRes] = await Promise.all([
+        const [projRes, docsRes, boqRes, procsRes, phasesRes, boqTemplatesRes, orderTemplatesRes] = await Promise.all([
           fetch(getApiUrl(`/api/projects/${projectId}`), {
             ...tokenHeader
           }),
@@ -194,6 +230,9 @@ export default function ProjectDetailsPage() {
             ...tokenHeader
           }),
           fetch(getApiUrl(`/api/projects/${projectId}/boq-templates`), {
+            ...tokenHeader
+          }),
+          fetch(getApiUrl(`/api/projects/${projectId}/order-templates`), {
             ...tokenHeader
           })
         ]);
@@ -218,6 +257,9 @@ export default function ProjectDetailsPage() {
         }
         if (boqTemplatesRes.ok) {
           setBoqTemplates(await boqTemplatesRes.json());
+        }
+        if (orderTemplatesRes.ok) {
+          setOrderTemplates(await orderTemplatesRes.json());
         }
       } catch {
         setError("Failed to load project");
@@ -586,6 +628,127 @@ export default function ProjectDetailsPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  // Order Template handlers
+  const addOrderItem = () => {
+    setOrderForm((p) => ({ ...p, items: [...p.items, { item: '', description: '', quantity: 1, unit: 'units', rate: 0, amount: 0 }] }));
+  };
+  const removeOrderItem = (index: number) => {
+    setOrderForm((p) => ({ ...p, items: p.items.filter((_, i) => i !== index) }));
+  };
+  const updateOrderItem = (index: number, field: keyof OrderTemplateItem, value: string | number) => {
+    setOrderForm((prev) => {
+      const items = [...prev.items];
+      const next = { ...items[index], [field]: value } as OrderTemplateItem;
+      if (field === 'quantity' || field === 'rate') {
+        const qty = field === 'quantity' ? Number(value) : Number(next.quantity);
+        const rate = field === 'rate' ? Number(value) : Number(next.rate);
+        next.amount = qty * rate;
+      }
+      items[index] = next;
+      return { ...prev, items };
+    });
+  };
+  const resetOrderForm = () => {
+    setOrderForm({ title: '', description: '', items: [] });
+    setShowOrderForm(false);
+  };
+  const submitOrderTemplate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setOrderTemplateError(null);
+    setOrderTemplateSuccess(null);
+    if (!orderForm.title || orderForm.items.length === 0) {
+      setOrderTemplateError('Please provide title and at least one item.');
+      return;
+    }
+    const token = typeof window !== 'undefined' ? localStorage.getItem('tms_token') : null;
+    if (!token) return;
+    try {
+      setOrderTemplateLoading(true);
+      const res = await fetch(getApiUrl(`/api/projects/${projectId}/order-templates`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(orderForm)
+      });
+      if (res.ok) {
+        const created = await res.json();
+        setOrderTemplates((prev) => [created, ...prev]);
+        setOrderTemplateSuccess('Order template created successfully.');
+        resetOrderForm();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setOrderTemplateError(err.error || 'Failed to create order template.');
+      }
+    } finally {
+      setOrderTemplateLoading(false);
+    }
+  };
+  const deleteOrderTemplate = async (templateId: string) => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('tms_token') : null;
+    if (!token) return;
+    if (!confirm('Delete this order template?')) return;
+    const res = await fetch(getApiUrl(`/api/projects/order-templates/${templateId}`), { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+    if (res.ok) setOrderTemplates((prev) => prev.filter((t) => t.id !== templateId));
+  };
+  const onUploadOrderDoc = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setOrderTemplateError(null);
+    setOrderTemplateSuccess(null);
+    if (!orderFiles || orderFiles.length === 0) {
+      setOrderTemplateError('Please choose at least one file.');
+      return;
+    }
+    const allowed = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'];
+    for (const f of Array.from(orderFiles)) {
+      const ext = f.name.split('.').pop()?.toLowerCase();
+      if (!ext || !allowed.includes(ext)) {
+        setOrderTemplateError('Only PDF, DOC, DOCX, JPG, JPEG, and PNG files are allowed.');
+        return;
+      }
+      if (f.size > 20 * 1024 * 1024) {
+        setOrderTemplateError('Each file must be 20MB or less.');
+        return;
+      }
+    }
+    const token = typeof window !== 'undefined' ? localStorage.getItem('tms_token') : null;
+    if (!token) return;
+    try {
+      setOrderUploading(true);
+      const form = new FormData();
+      Array.from(orderFiles).forEach((f) => form.append('documents', f));
+      form.append('documentType', 'order');
+      form.append('category', 'PROJECT_DOCUMENTS');
+      const res = await fetch(getApiUrl(`/api/projects/${projectId}/documents`), { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form });
+      if (res.ok) {
+        setOrderFiles(null);
+        setOrderTemplateSuccess('Order document uploaded successfully.');
+      } else {
+        setOrderTemplateError('Failed to upload order document.');
+      }
+    } finally {
+      setOrderUploading(false);
+    }
+  };
+
+  const runComparison = (templateId: string) => {
+    setCompareTemplateId(templateId);
+    const order = orderTemplates.find((t) => t.id === templateId);
+    if (!order) return;
+    // Compare by exact item name against the latest BOQ template (or first if no latest)
+    const boq = boqTemplates[0];
+    const boqMap: Record<string, number> = {};
+    if (boq) {
+      for (const b of boq.items) {
+        boqMap[b.item.toLowerCase()] = Number(b.quantity);
+      }
+    }
+    const rows = order.items.map((it) => {
+      const oq = Number(it.quantity);
+      const bq = boqMap[it.item.toLowerCase()] ?? 0;
+      return { item: it.item, orderQty: oq, boqQty: bq, alert: oq > bq };
+    });
+    setComparisonRows(rows);
   };
 
   const addStakeholder = async (e: React.FormEvent) => {
@@ -1081,6 +1244,123 @@ export default function ProjectDetailsPage() {
           )}
         </div>
       </div>
+
+      {/* Order Templates & Comparison */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-lg shadow p-5">
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="text-lg font-semibold text-gray-900">Order Templates</h2>
+            <button
+              onClick={() => setShowOrderForm(true)}
+              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors text-sm"
+            >
+              New Order
+            </button>
+          </div>
+          {orderTemplateError && <div className="text-sm text-red-600 mb-3">{orderTemplateError}</div>}
+          {orderTemplateSuccess && <div className="text-sm text-green-700 mb-3">{orderTemplateSuccess}</div>}
+          {orderTemplates.length === 0 ? (
+            <div className="text-sm text-gray-500">No order templates yet.</div>
+          ) : (
+            <div className="space-y-3">
+              {orderTemplates.map((t) => (
+                <div key={t.id} className="p-3 border rounded-md flex items-center justify-between">
+                  <div className="mr-3">
+                    <div className="font-medium text-gray-900">{t.title}</div>
+                    <div className="text-xs text-gray-500">{t.items.length} items • by {t.createdByUser.name}</div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button className="text-blue-600 hover:text-blue-800 text-sm" onClick={() => runComparison(t.id)}>Compare to BOQ</button>
+                    <button className="text-red-600 hover:text-red-800 text-sm" onClick={() => deleteOrderTemplate(t.id)}>Delete</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-5">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Upload Order Document</h2>
+          <form onSubmit={onUploadOrderDoc} className="space-y-3">
+            <div>
+              <label className="block text-sm text-gray-700 mb-1">Files</label>
+              <input type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={(e) => setOrderFiles(e.target.files)} className="w-full text-gray-900"/>
+            </div>
+            <button type="submit" disabled={orderUploading || !orderFiles || orderFiles.length === 0} className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors disabled:opacity-60" aria-busy={orderUploading}>
+              {orderUploading ? 'Uploading...' : 'Upload Order'}
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {showOrderForm && (
+        <div className="bg-white rounded-lg shadow p-5">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">New Order Template</h2>
+          <form onSubmit={submitOrderTemplate} className="space-y-4">
+            <input className="border text-gray-900 rounded-md px-3 py-2 w-full" placeholder="Title" value={orderForm.title} onChange={(e) => setOrderForm((p) => ({ ...p, title: e.target.value }))} />
+            <input className="border text-gray-900 rounded-md px-3 py-2 w-full" placeholder="Description (optional)" value={orderForm.description} onChange={(e) => setOrderForm((p) => ({ ...p, description: e.target.value }))} />
+
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-sm text-gray-700">Items</label>
+              <button type="button" onClick={addOrderItem} className="text-green-600 hover:text-green-800 text-sm">+ Add Item</button>
+            </div>
+            {orderForm.items.length === 0 ? (
+              <div className="text-sm text-gray-500 text-center py-4 border-2 border-dashed border-gray-300 rounded-md">No items. Click + Add Item.</div>
+            ) : (
+              <div className="space-y-2">
+                {orderForm.items.map((it, idx) => (
+                  <div key={idx} className="grid grid-cols-6 gap-2 p-2 border rounded-md">
+                    <input type="text" value={it.item} onChange={(e) => updateOrderItem(idx, 'item', e.target.value)} placeholder="Item" className="text-gray-900 rounded px-2 py-1 text-sm"/>
+                    <input type="text" value={it.description || ''} onChange={(e) => updateOrderItem(idx, 'description', e.target.value)} placeholder="Description" className="text-gray-900 rounded px-2 py-1 text-sm"/>
+                    <input type="number" value={it.quantity} onChange={(e) => updateOrderItem(idx, 'quantity', Number(e.target.value))} placeholder="Qty" className="text-gray-900 rounded px-2 py-1 text-sm" min="0"/>
+                    <input type="text" value={it.unit} onChange={(e) => updateOrderItem(idx, 'unit', e.target.value)} placeholder="Unit" className="text-gray-900 rounded px-2 py-1 text-sm"/>
+                    <input type="number" value={it.rate} onChange={(e) => updateOrderItem(idx, 'rate', Number(e.target.value))} placeholder="Rate" className="text-gray-900 rounded px-2 py-1 text-sm" min="0" step="0.01"/>
+                    <div className="flex items-center space-x-1">
+                      <span className="text-sm text-gray-600">{it.amount.toFixed(2)}</span>
+                      <button type="button" onClick={() => removeOrderItem(idx)} className="text-red-600 hover:text-red-800 text-sm">×</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex space-x-3">
+              <button type="submit" disabled={orderTemplateLoading} className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-60">
+                {orderTemplateLoading ? 'Saving...' : 'Create Order'}
+              </button>
+              <button type="button" onClick={resetOrderForm} className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors">Cancel</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Comparison Table */}
+      {compareTemplateId && (
+        <div className="bg-white rounded-lg shadow p-5">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Order vs BOQ Comparison</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full border">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="text-left text-sm font-semibold text-gray-700 px-3 py-2 border">Item</th>
+                  <th className="text-right text-sm font-semibold text-gray-700 px-3 py-2 border">Order Qty</th>
+                  <th className="text-right text-sm font-semibold text-gray-700 px-3 py-2 border">BOQ Qty</th>
+                  <th className="text-left text-sm font-semibold text-gray-700 px-3 py-2 border">Alert</th>
+                </tr>
+              </thead>
+              <tbody>
+                {comparisonRows.map((r, i) => (
+                  <tr key={i} className={r.alert ? 'bg-red-50' : ''}>
+                    <td className="px-3 py-2 border text-gray-900">{r.item}</td>
+                    <td className="px-3 py-2 border text-right text-gray-900">{r.orderQty}</td>
+                    <td className="px-3 py-2 border text-right text-gray-900">{r.boqQty}</td>
+                    <td className="px-3 py-2 border">{r.alert ? <span className="text-red-700 text-sm font-medium">Exceeds BOQ</span> : <span className="text-green-700 text-sm">OK</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Stakeholders */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -9,8 +9,10 @@ export default function SignupPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'SITE_SUPERVISOR'
+    role: 'SITE_SUPERVISOR',
+    assignedProjectId: ''
   });
+  const [projects, setProjects] = useState<Array<{ id: string; title: string }>>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,6 +35,11 @@ export default function SignupPage() {
     }
 
     try {
+      if (formData.role === 'SITE_SUPERVISOR' && !formData.assignedProjectId) {
+        setError('Please select the project you are assigned to');
+        setLoading(false);
+        return;
+      }
       const res = await fetch(getApiUrl('/api/auth/signup'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -40,7 +47,8 @@ export default function SignupPage() {
           name: formData.name,
           email: formData.email,
           password: formData.password,
-          role: formData.role
+          role: formData.role,
+          assignedProjectId: formData.role === 'SITE_SUPERVISOR' ? formData.assignedProjectId : undefined
         })
       });
 
@@ -69,6 +77,20 @@ export default function SignupPage() {
     { value: 'FINANCE_PROCUREMENT', label: 'Finance and Procurement Officer' }
   ];
 
+  // Load projects for site supervisor selection
+  useEffect(() => {
+    async function loadProjects() {
+      try {
+        const res = await fetch(getApiUrl('/api/projects/public'));
+        if (res.ok) {
+          const data = await res.json();
+          setProjects(data);
+        }
+      } catch {}
+    }
+    loadProjects();
+  }, []);
+
   return (
     <div className="max-w-md mx-auto p-6">
       <div className="text-center mb-6">
@@ -89,6 +111,24 @@ export default function SignupPage() {
             required
           />
         </div>
+
+        {formData.role === 'SITE_SUPERVISOR' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Assigned Project</label>
+            <select
+              name="assignedProjectId"
+              value={formData.assignedProjectId}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+              required
+            >
+              <option value="">Select a project...</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>{p.title}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
