@@ -24,6 +24,7 @@ model User {
   createdProjects Project[]
   uploadedDocuments ProjectDocument[]
   createdBoqTemplates BoqTemplate[]
+  createdOrderTemplates OrderTemplate[]
   supervisorAssignments SiteSupervisorAssignment[]
 
   @@map("users")
