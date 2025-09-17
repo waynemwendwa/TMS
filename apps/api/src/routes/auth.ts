@@ -193,28 +193,19 @@ router.post('/signup', async (req: Request, res: Response) => {
     console.log('Checking if user exists...');
     const existing = await prisma.user.findUnique({ where: { email } });
     console.log('User exists:', !!existing);
-    
     if (existing) {
       console.log('User already exists');
       return res.status(409).json({ error: 'User already exists' });
     }
 
-    console.log('Hashing password...');
-    const passwordHash = await bcrypt.hash(password, 10);
-    console.log('Password hashed successfully');
-    
-    console.log('Creating user in database...');
     // Validate role against enum
     const allowedRoles = Object.values(UserRole);
     if (!allowedRoles.includes(role as UserRole)) {
       return res.status(400).json({ error: 'Invalid role' });
     }
-    const user = await prisma.user.create({
-      data: { email, name, role: role as UserRole, passwordHash }
-    });
-    console.log('User created successfully:', user.id);
 
-    // If Site Supervisor, create assignment (exactly one project)
+    // If Site Supervisor, validate assigned project BEFORE creating the user
+    let projectIdToAssign: string | null = null;
     if (role === 'SITE_SUPERVISOR') {
       if (!assignedProjectId) {
         console.log('Site Supervisor missing assignedProjectId');
@@ -224,10 +215,24 @@ router.post('/signup', async (req: Request, res: Response) => {
       if (!projectExists) {
         return res.status(400).json({ error: 'Assigned project not found' });
       }
-      await prisma.siteSupervisorAssignment.create({
-        data: { userId: user.id, projectId: assignedProjectId }
-      });
+      projectIdToAssign = assignedProjectId;
     }
+
+    console.log('Hashing password...');
+    const passwordHash = await bcrypt.hash(password, 10);
+    console.log('Password hashed successfully');
+
+    console.log('Creating user (and assignment if any) in a transaction...');
+    const user = await prisma.$transaction(async (tx) => {
+      const createdUser = await tx.user.create({
+        data: { email, name, role: role as UserRole, passwordHash }
+      });
+      if (projectIdToAssign) {
+        await tx.siteSupervisorAssignment.create({ data: { userId: createdUser.id, projectId: projectIdToAssign } });
+      }
+      return createdUser;
+    });
+    console.log('User created successfully:', user.id);
 
     console.log('Generating token...');
     const token = signToken({ id: user.id, email: user.email, role: user.role });
