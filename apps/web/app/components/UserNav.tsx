@@ -64,44 +64,29 @@ export default function UserNav() {
     if (!user) return [];
     
     const baseItems = [
-      { href: '/inventory', label: 'Inventory' },
-      { href: '/projects', label: 'Projects' }
+      { href: '/projects', label: 'Projects' },
+      { href: '/inventory', label: 'Inventory' }
     ];
 
     // Role-specific navigation
     switch (user.role) {
       case 'SITE_SUPERVISOR':
         return [
-          { href: '/projects', label: 'Projects' },
-          { href: '/reports', label: 'Reports' }
+          { href: '/projects', label: 'Projects' }
         ];
       
       case 'PROCUREMENT':
       case 'FINANCE_PROCUREMENT':
-        return [
-          { href: '/inventory', label: 'Inventory' },
-          { href: '/projects', label: 'Projects' },
-          { href: '/procurement', label: 'Procurement' },
-          { href: '/suppliers', label: 'Suppliers' },
-          { href: '/reports', label: 'Reports' }
-        ];
+        return baseItems;
       
       case 'SUPPLIER':
         return [
-          { href: '/projects', label: 'Projects' },
-          { href: '/suppliers', label: 'My Quotes' }
+          { href: '/projects', label: 'Projects' }
         ];
       
       case 'CHAIRMAN':
       case 'CHAIRMAN_PA':
-        return [
-          { href: '/inventory', label: 'Inventory' },
-          { href: '/projects', label: 'Projects' },
-          { href: '/procurement', label: 'Procurement' },
-          { href: '/suppliers', label: 'Suppliers' },
-          { href: '/reports', label: 'Reports' },
-          { href: '/admin', label: 'Admin' }
-        ];
+        return baseItems;
       
       default:
         return baseItems;
