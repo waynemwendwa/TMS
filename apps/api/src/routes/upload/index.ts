@@ -108,8 +108,20 @@ router.get('/view', (req: Request, res: Response) => {
     }
 
     const decodedPath = decodeURIComponent(filePath);
-    const absolutePath = path.isAbsolute(decodedPath) ? decodedPath : path.join(process.cwd(), decodedPath);
-    
+    let absolutePath = path.isAbsolute(decodedPath) ? decodedPath : path.join(process.cwd(), decodedPath);
+
+    // Fallback: map old absolute paths from previous releases to current cwd
+    if (!fs.existsSync(absolutePath)) {
+      const renderPrefix = '/opt/render/project/src/';
+      if (decodedPath.startsWith(renderPrefix)) {
+        const relFromRenderRoot = decodedPath.substring(renderPrefix.length);
+        const altPath = path.join(process.cwd(), relFromRenderRoot);
+        if (fs.existsSync(altPath)) {
+          absolutePath = altPath;
+        }
+      }
+    }
+
     if (!fs.existsSync(absolutePath)) {
       return res.status(404).json({ error: 'File not found' });
     }
@@ -156,8 +168,19 @@ router.get('/download', (req: Request, res: Response) => {
     }
 
     const decodedPath = decodeURIComponent(filePath);
-    const absolutePath = path.isAbsolute(decodedPath) ? decodedPath : path.join(process.cwd(), decodedPath);
-    
+    let absolutePath = path.isAbsolute(decodedPath) ? decodedPath : path.join(process.cwd(), decodedPath);
+
+    if (!fs.existsSync(absolutePath)) {
+      const renderPrefix = '/opt/render/project/src/';
+      if (decodedPath.startsWith(renderPrefix)) {
+        const relFromRenderRoot = decodedPath.substring(renderPrefix.length);
+        const altPath = path.join(process.cwd(), relFromRenderRoot);
+        if (fs.existsSync(altPath)) {
+          absolutePath = altPath;
+        }
+      }
+    }
+
     if (!fs.existsSync(absolutePath)) {
       return res.status(404).json({ error: 'File not found' });
     }
