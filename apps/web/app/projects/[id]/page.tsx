@@ -718,7 +718,7 @@ export default function ProjectDetailsPage() {
       const form = new FormData();
       Array.from(orderFiles).forEach((f) => form.append('documents', f));
       form.append('documentType', 'order');
-      form.append('category', 'PROJECT_DOCUMENTS');
+      form.append('category', 'OTHER');
       const res = await fetch(getApiUrl(`/api/projects/${projectId}/documents`), { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form });
       if (res.ok) {
         setOrderFiles(null);

@@ -334,7 +334,8 @@ router.post('/:id/documents', requireAuth, projectUpload.array('documents', 10),
     const uploaded: any[] = [];
     for (const file of files) {
       if (!file.path) throw new Error('File path is undefined');
-
+      // store a relative path to be portable across environments
+      const relativePath = path.relative(process.cwd(), file.path);
       const created = await prisma.projectDocument.create({
         data: {
           projectId: id,
@@ -343,8 +344,8 @@ router.post('/:id/documents', requireAuth, projectUpload.array('documents', 10),
           category: (category as any) || 'OTHER',
           type: path.extname(file.originalname).toLowerCase().substring(1).toUpperCase() as any,
           size: file.size,
-          url: `/api/upload/view?filePath=${encodeURIComponent(file.path)}`,
-          filePath: file.path,
+          url: `/api/upload/view?filePath=${encodeURIComponent(relativePath)}`,
+          filePath: relativePath,
           uploadedBy: req.user!.id,
           documentType
         }

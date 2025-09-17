@@ -74,6 +74,7 @@ router.post('/office-documents', requireAuth, upload.array('documents', 10), asy
         throw new Error('File path is undefined');
       }
       
+      const relativePath = path.relative(process.cwd(), file.path);
       const document = await prisma.officeDocument.create({
         data: {
           name: name || file.originalname,
@@ -81,8 +82,8 @@ router.post('/office-documents', requireAuth, upload.array('documents', 10), asy
           category: category as any,
           type: path.extname(file.originalname).toLowerCase().substring(1).toUpperCase() as any,
           size: file.size,
-          url: `/api/upload/view?filePath=${encodeURIComponent(file.path)}`,
-          filePath: file.path,
+          url: `/api/upload/view?filePath=${encodeURIComponent(relativePath)}`,
+          filePath: relativePath,
           uploadedBy: req.user!.email, // Use email since name is not in JwtUserPayload
           tags: tags ? JSON.parse(tags) : []
         }
@@ -107,12 +108,13 @@ router.get('/view', (req: Request, res: Response) => {
     }
 
     const decodedPath = decodeURIComponent(filePath);
+    const absolutePath = path.isAbsolute(decodedPath) ? decodedPath : path.join(process.cwd(), decodedPath);
     
-    if (!fs.existsSync(decodedPath)) {
+    if (!fs.existsSync(absolutePath)) {
       return res.status(404).json({ error: 'File not found' });
     }
 
-    const ext = path.extname(decodedPath).toLowerCase();
+    const ext = path.extname(absolutePath).toLowerCase();
     let contentType = 'application/octet-stream';
     
     // Set appropriate content type for viewing
@@ -136,8 +138,8 @@ router.get('/view', (req: Request, res: Response) => {
     }
 
     res.setHeader('Content-Type', contentType);
-    res.setHeader('Content-Disposition', 'inline'); // Display in browser instead of download
-    res.sendFile(decodedPath);
+    res.setHeader('Content-Disposition', 'inline');
+    res.sendFile(absolutePath);
   } catch (error) {
     console.error('Error viewing file:', error);
     res.status(500).json({ error: 'Failed to view file' });
@@ -154,12 +156,13 @@ router.get('/download', (req: Request, res: Response) => {
     }
 
     const decodedPath = decodeURIComponent(filePath);
+    const absolutePath = path.isAbsolute(decodedPath) ? decodedPath : path.join(process.cwd(), decodedPath);
     
-    if (!fs.existsSync(decodedPath)) {
+    if (!fs.existsSync(absolutePath)) {
       return res.status(404).json({ error: 'File not found' });
     }
 
-    res.download(decodedPath);
+    res.download(absolutePath);
   } catch (error) {
     console.error('Error downloading file:', error);
     res.status(500).json({ error: 'Failed to download file' });
