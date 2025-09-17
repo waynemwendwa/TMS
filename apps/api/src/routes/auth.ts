@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '@tms/db/client';
+import { UserRole } from '@prisma/client';
 import { signToken } from '../services/auth.js';
 import { requireAuth } from '../middleware/auth.js';
 import bcrypt from 'bcryptjs';
@@ -203,8 +204,13 @@ router.post('/signup', async (req: Request, res: Response) => {
     console.log('Password hashed successfully');
     
     console.log('Creating user in database...');
+    // Validate role against enum
+    const allowedRoles = Object.values(UserRole);
+    if (!allowedRoles.includes(role as UserRole)) {
+      return res.status(400).json({ error: 'Invalid role' });
+    }
     const user = await prisma.user.create({
-      data: { email, name, role, passwordHash }
+      data: { email, name, role: role as UserRole, passwordHash }
     });
     console.log('User created successfully:', user.id);
 
