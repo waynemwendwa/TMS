@@ -1128,18 +1128,18 @@ export default function ProjectDetailsPage() {
             </div>
           </div>
           <form onSubmit={addPhase} className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-            <input className="border rounded-md px-3 py-2" placeholder="Phase name" value={newPhase.phaseName} onChange={(e) => setNewPhase({ ...newPhase, phaseName: e.target.value })} />
-            <input className="border rounded-md px-3 py-2" placeholder="Week number" type="number" min={1} value={newPhase.weekNumber} onChange={(e) => setNewPhase({ ...newPhase, weekNumber: Number(e.target.value) })} />
-            <select className="border rounded-md px-3 py-2" value={newPhase.status} onChange={(e) => setNewPhase({ ...newPhase, status: e.target.value })}>
+            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Phase name" value={newPhase.phaseName} onChange={(e) => setNewPhase({ ...newPhase, phaseName: e.target.value })} />
+            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Week number" type="number" min={1} value={newPhase.weekNumber} onChange={(e) => setNewPhase({ ...newPhase, weekNumber: Number(e.target.value) })} />
+            <select className="border text-gray-900 rounded-md px-3 py-2" value={newPhase.status} onChange={(e) => setNewPhase({ ...newPhase, status: e.target.value })}>
               <option>PLANNED</option>
               <option>IN_PROGRESS</option>
               <option>COMPLETED</option>
               <option>DELAYED</option>
             </select>
-            <input className="border rounded-md px-3 py-2" placeholder="Start date" type="date" value={newPhase.startDate} onChange={(e) => setNewPhase({ ...newPhase, startDate: e.target.value })} />
-            <input className="border rounded-md px-3 py-2" placeholder="End date" type="date" value={newPhase.endDate} onChange={(e) => setNewPhase({ ...newPhase, endDate: e.target.value })} />
-            <input className="border rounded-md px-3 py-2 md:col-span-2" placeholder="Tasks (comma separated)" value={newPhase.tasks} onChange={(e) => setNewPhase({ ...newPhase, tasks: e.target.value })} />
-            <input className="border rounded-md px-3 py-2 md:col-span-2" placeholder="Materials (comma separated)" value={newPhase.materials} onChange={(e) => setNewPhase({ ...newPhase, materials: e.target.value })} />
+            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Start date" type="date" value={newPhase.startDate} onChange={(e) => setNewPhase({ ...newPhase, startDate: e.target.value })} />
+            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="End date" type="date" value={newPhase.endDate} onChange={(e) => setNewPhase({ ...newPhase, endDate: e.target.value })} />
+            <input className="border text-gray-900 rounded-md px-3 py-2 md:col-span-2" placeholder="Tasks (comma separated)" value={newPhase.tasks} onChange={(e) => setNewPhase({ ...newPhase, tasks: e.target.value })} />
+            <input className="border text-gray-900 rounded-md px-3 py-2 md:col-span-2" placeholder="Materials (comma separated)" value={newPhase.materials} onChange={(e) => setNewPhase({ ...newPhase, materials: e.target.value })} />
             <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors md:col-span-2">Add Phase</button>
           </form>
           {phases.length === 0 ? (
@@ -1151,8 +1151,8 @@ export default function ProjectDetailsPage() {
                 .map((ph) => (
                 <div key={ph.id} className="p-3 border rounded-md">
                   <div className="flex items-center justify-between">
-                    <div className="font-medium">Week {ph.weekNumber}: {ph.phaseName}</div>
-                    <select className="border rounded px-2 py-1 text-xs" defaultValue={ph.status} onChange={(e)=>updatePhase(ph.id, { status: e.target.value as PhaseStatus })} disabled={updatingPhaseId===ph.id}>
+                    <div className="font-medium text-gray-900">Week {ph.weekNumber}: {ph.phaseName}</div>
+                    <select className="border text-gray-900 rounded px-2 py-1 text-xs" defaultValue={ph.status} onChange={(e)=>updatePhase(ph.id, { status: e.target.value as PhaseStatus })} disabled={updatingPhaseId===ph.id}>
                       <option>PLANNED</option>
                       <option>IN_PROGRESS</option>
                       <option>COMPLETED</option>
@@ -1163,19 +1163,19 @@ export default function ProjectDetailsPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
                     <div>
                       <div className="text-gray-600">Start</div>
-                      <input type="date" className="border rounded px-2 py-1 w-full" defaultValue={ph.startDate?.substring(0,10)} onBlur={(e)=>updatePhase(ph.id, { startDate: e.target.value })} disabled={updatingPhaseId===ph.id} />
+                      <input type="date" className="border text-gray-900 rounded px-2 py-1 w-full" defaultValue={ph.startDate?.substring(0,10)} onBlur={(e)=>updatePhase(ph.id, { startDate: e.target.value })} disabled={updatingPhaseId===ph.id} />
                     </div>
                     <div>
                       <div className="text-gray-600">End</div>
-                      <input type="date" className="border rounded px-2 py-1 w-full" defaultValue={ph.endDate?.substring(0,10)} onBlur={(e)=>updatePhase(ph.id, { endDate: e.target.value })} disabled={updatingPhaseId===ph.id} />
+                      <input type="date" className="border text-gray-900 rounded px-2 py-1 w-full" defaultValue={ph.endDate?.substring(0,10)} onBlur={(e)=>updatePhase(ph.id, { endDate: e.target.value })} disabled={updatingPhaseId===ph.id} />
                     </div>
                     <div className="md:col-span-2">
                       <div className="text-gray-600">Tasks (comma separated)</div>
-                      <input className="border rounded px-2 py-1 w-full" defaultValue={(ph.tasks||[]).join(', ')} onBlur={(e)=>updatePhase(ph.id, { tasks: e.target.value })} disabled={updatingPhaseId===ph.id} />
+                      <input className="border text-gray-900 rounded px-2 py-1 w-full" defaultValue={(ph.tasks||[]).join(', ')} onBlur={(e)=>updatePhase(ph.id, { tasks: e.target.value })} disabled={updatingPhaseId===ph.id} />
                     </div>
                     <div className="md:col-span-2">
                       <div className="text-gray-600">Materials (comma separated)</div>
-                      <input className="border rounded px-2 py-1 w-full" defaultValue={(ph.materials||[]).join(', ')} onBlur={(e)=>updatePhase(ph.id, { materials: e.target.value })} disabled={updatingPhaseId===ph.id} />
+                      <input className="border text-gray-900 rounded px-2 py-1 w-full" defaultValue={(ph.materials||[]).join(', ')} onBlur={(e)=>updatePhase(ph.id, { materials: e.target.value })} disabled={updatingPhaseId===ph.id} />
                     </div>
                   </div>
                 </div>
