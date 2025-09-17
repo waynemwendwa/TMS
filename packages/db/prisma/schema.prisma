@@ -23,6 +23,7 @@ model User {
   inventoryLogs   InventoryLog[]
   createdProjects Project[]
   uploadedDocuments ProjectDocument[]
+  createdBoqTemplates BoqTemplate[]
 
   @@map("users")
 }
@@ -138,6 +139,7 @@ model Project {
   stakeholders       ProjectStakeholder[]
   procurementItems   ProcurementItem[]
   projectPhases      ProjectPhase[]
+  boqTemplates       BoqTemplate[]
   createdByUser      User @relation(fields: [createdBy], references: [id])
 
   @@map("projects")
@@ -263,4 +265,41 @@ enum PhaseStatus {
   IN_PROGRESS
   COMPLETED
   DELAYED
+}
+
+// BOQ Template Management
+model BoqTemplate {
+  id          String   @id @default(cuid())
+  projectId   String
+  title       String   // Project title with phase
+  equipmentInstallationWorks String // Materials needed to be installed
+  billNumber  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String
+
+  // Relations
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdByUser User @relation(fields: [createdBy], references: [id])
+  items       BoqTemplateItem[]
+
+  @@map("boq_templates")
+}
+
+model BoqTemplateItem {
+  id          String   @id @default(cuid())
+  boqTemplateId String
+  item        String
+  description String?
+  quantity    Int
+  unit        String
+  rate        Decimal  @db.Decimal(15, 2)
+  amount      Decimal  @db.Decimal(15, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  boqTemplate BoqTemplate @relation(fields: [boqTemplateId], references: [id], onDelete: Cascade)
+
+  @@map("boq_template_items")
 }

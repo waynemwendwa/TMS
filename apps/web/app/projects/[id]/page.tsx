@@ -50,6 +50,33 @@ type ProcurementItem = {
   updatedAt?: string;
 };
 
+type BoqTemplateItem = {
+  id?: string;
+  item: string;
+  description?: string;
+  quantity: number;
+  unit: string;
+  rate: number;
+  amount: number;
+};
+
+type BoqTemplate = {
+  id: string;
+  projectId: string;
+  title: string;
+  equipmentInstallationWorks: string;
+  billNumber: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+  items: BoqTemplateItem[];
+  createdByUser: {
+    id: string;
+    name: string;
+    email: string;
+  };
+};
+
 type PhaseStatus = "PLANNED" | "IN_PROGRESS" | "COMPLETED" | "DELAYED";
 type ProjectPhase = {
   id: string;
@@ -99,6 +126,20 @@ export default function ProjectDetailsPage() {
   const [boqError, setBoqError] = useState<string | null>(null);
   const [boqSuccess, setBoqSuccess] = useState<string | null>(null);
 
+  // BOQ template state
+  const [boqTemplates, setBoqTemplates] = useState<BoqTemplate[]>([]);
+  const [showBoqTemplateForm, setShowBoqTemplateForm] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<BoqTemplate | null>(null);
+  const [boqTemplateForm, setBoqTemplateForm] = useState({
+    title: "",
+    equipmentInstallationWorks: "",
+    billNumber: "",
+    items: [] as BoqTemplateItem[]
+  });
+  const [boqTemplateError, setBoqTemplateError] = useState<string | null>(null);
+  const [boqTemplateSuccess, setBoqTemplateSuccess] = useState<string | null>(null);
+  const [boqTemplateLoading, setBoqTemplateLoading] = useState(false);
+
   // Procurement state
   const [procurements, setProcurements] = useState<ProcurementItem[]>([]);
   const [newProc, setNewProc] = useState({ itemName: "", description: "", quantity: 1, unit: "units", estimatedCost: "" });
@@ -136,7 +177,7 @@ export default function ProjectDetailsPage() {
       setError(null);
       try {
         const tokenHeader = { headers: { Authorization: `Bearer ${token}` } } as const;
-        const [projRes, docsRes, boqRes, procsRes, phasesRes] = await Promise.all([
+        const [projRes, docsRes, boqRes, procsRes, phasesRes, boqTemplatesRes] = await Promise.all([
           fetch(getApiUrl(`/api/projects/${projectId}`), {
             ...tokenHeader
           }),
@@ -150,6 +191,9 @@ export default function ProjectDetailsPage() {
             ...tokenHeader
           }),
           fetch(getApiUrl(`/api/projects/${projectId}/phases`), {
+            ...tokenHeader
+          }),
+          fetch(getApiUrl(`/api/projects/${projectId}/boq-templates`), {
             ...tokenHeader
           })
         ]);
@@ -171,6 +215,9 @@ export default function ProjectDetailsPage() {
         }
         if (phasesRes.ok) {
           setPhases(await phasesRes.json());
+        }
+        if (boqTemplatesRes.ok) {
+          setBoqTemplates(await boqTemplatesRes.json());
         }
       } catch {
         setError("Failed to load project");
@@ -282,6 +329,138 @@ export default function ProjectDetailsPage() {
       setBoqError('Upload failed. Please try again.');
     } finally {
       setBoqUploading(false);
+    }
+  };
+
+  // BOQ Template handlers
+  const addBoqTemplateItem = () => {
+    setBoqTemplateForm(prev => ({
+      ...prev,
+      items: [...prev.items, { item: "", description: "", quantity: 1, unit: "units", rate: 0, amount: 0 }]
+    }));
+  };
+
+  const removeBoqTemplateItem = (index: number) => {
+    setBoqTemplateForm(prev => ({
+      ...prev,
+      items: prev.items.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateBoqTemplateItem = (index: number, field: keyof BoqTemplateItem, value: string | number) => {
+    setBoqTemplateForm(prev => {
+      const newItems = [...prev.items];
+      newItems[index] = { ...newItems[index], [field]: value };
+      
+      // Auto-calculate amount when quantity or rate changes
+      if (field === 'quantity' || field === 'rate') {
+        const quantity = field === 'quantity' ? Number(value) : newItems[index].quantity;
+        const rate = field === 'rate' ? Number(value) : newItems[index].rate;
+        newItems[index].amount = quantity * rate;
+      }
+      
+      return { ...prev, items: newItems };
+    });
+  };
+
+  const resetBoqTemplateForm = () => {
+    setBoqTemplateForm({
+      title: "",
+      equipmentInstallationWorks: "",
+      billNumber: "",
+      items: []
+    });
+    setEditingTemplate(null);
+    setShowBoqTemplateForm(false);
+  };
+
+  const onSubmitBoqTemplate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBoqTemplateError(null);
+    setBoqTemplateSuccess(null);
+
+    if (!boqTemplateForm.title || !boqTemplateForm.equipmentInstallationWorks || !boqTemplateForm.billNumber) {
+      setBoqTemplateError('Please fill in all required fields.');
+      return;
+    }
+
+    if (boqTemplateForm.items.length === 0) {
+      setBoqTemplateError('Please add at least one item.');
+      return;
+    }
+
+    const token = typeof window !== "undefined" ? localStorage.getItem("tms_token") : null;
+    if (!token) return;
+
+    try {
+      setBoqTemplateLoading(true);
+      const url = editingTemplate 
+        ? getApiUrl(`/api/projects/boq-templates/${editingTemplate.id}`)
+        : getApiUrl(`/api/projects/${projectId}/boq-templates`);
+      
+      const method = editingTemplate ? 'PUT' : 'POST';
+      
+      const res = await fetch(url, {
+        method,
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(boqTemplateForm)
+      });
+
+      if (res.ok) {
+        const template = await res.json();
+        if (editingTemplate) {
+          setBoqTemplates(prev => prev.map(t => t.id === template.id ? template : t));
+          setBoqTemplateSuccess('BOQ template updated successfully.');
+        } else {
+          setBoqTemplates(prev => [template, ...prev]);
+          setBoqTemplateSuccess('BOQ template created successfully.');
+        }
+        resetBoqTemplateForm();
+      } else {
+        const error = await res.json();
+        setBoqTemplateError(error.error || 'Failed to save BOQ template.');
+      }
+    } catch {
+      setBoqTemplateError('Failed to save BOQ template. Please try again.');
+    } finally {
+      setBoqTemplateLoading(false);
+    }
+  };
+
+  const editBoqTemplate = (template: BoqTemplate) => {
+    setEditingTemplate(template);
+    setBoqTemplateForm({
+      title: template.title,
+      equipmentInstallationWorks: template.equipmentInstallationWorks,
+      billNumber: template.billNumber,
+      items: template.items
+    });
+    setShowBoqTemplateForm(true);
+  };
+
+  const deleteBoqTemplate = async (templateId: string) => {
+    if (!confirm('Are you sure you want to delete this BOQ template?')) return;
+    
+    const token = typeof window !== "undefined" ? localStorage.getItem("tms_token") : null;
+    if (!token) return;
+
+    try {
+      const res = await fetch(getApiUrl(`/api/projects/boq-templates/${templateId}`), {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (res.ok) {
+        setBoqTemplates(prev => prev.filter(t => t.id !== templateId));
+        setBoqTemplateSuccess('BOQ template deleted successfully.');
+      } else {
+        setBoqTemplateError('Failed to delete BOQ template.');
+      }
+    } catch {
+      setBoqTemplateError('Failed to delete BOQ template.');
     }
   };
 
@@ -564,6 +743,197 @@ export default function ProjectDetailsPage() {
                   <a href={getApiUrl(doc.url)} target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-800 text-sm">View</a>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* BOQ Templates */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-lg shadow p-5">
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="text-lg font-semibold text-gray-900">BOQ Templates</h2>
+            <button
+              onClick={() => setShowBoqTemplateForm(true)}
+              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors text-sm"
+            >
+              Create Template
+            </button>
+          </div>
+          
+          {boqTemplateError && <div className="text-sm text-red-600 mb-3">{boqTemplateError}</div>}
+          {boqTemplateSuccess && <div className="text-sm text-green-700 mb-3">{boqTemplateSuccess}</div>}
+          
+          {boqTemplates.length === 0 ? (
+            <div className="text-sm text-gray-500">No BOQ templates created yet.</div>
+          ) : (
+            <div className="space-y-3">
+              {boqTemplates.map((template) => (
+                <div key={template.id} className="p-3 border rounded-md">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">{template.title}</div>
+                      <div className="text-sm text-gray-600">{template.equipmentInstallationWorks}</div>
+                      <div className="text-xs text-gray-500">
+                        Bill #{template.billNumber} • {template.items.length} items • 
+                        Created by {template.createdByUser.name} • {new Date(template.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <div className="flex space-x-2 ml-3">
+                      <button
+                        onClick={() => editBoqTemplate(template)}
+                        className="text-blue-600 hover:text-blue-800 text-sm"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => deleteBoqTemplate(template.id)}
+                        className="text-red-600 hover:text-red-800 text-sm"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-5">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">BOQ Template Form</h2>
+          {showBoqTemplateForm ? (
+            <form onSubmit={onSubmitBoqTemplate} className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-700 mb-1">Project Title with Phase *</label>
+                <input
+                  type="text"
+                  value={boqTemplateForm.title}
+                  onChange={(e) => setBoqTemplateForm(prev => ({ ...prev, title: e.target.value }))}
+                  className="w-full border text-gray-900 rounded-md px-3 py-2"
+                  placeholder="e.g., Office Building Construction - Phase 1"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-700 mb-1">Equipment Installation Works *</label>
+                <input
+                  type="text"
+                  value={boqTemplateForm.equipmentInstallationWorks}
+                  onChange={(e) => setBoqTemplateForm(prev => ({ ...prev, equipmentInstallationWorks: e.target.value }))}
+                  className="w-full border text-gray-900 rounded-md px-3 py-2"
+                  placeholder="e.g., Electrical installation, plumbing, HVAC systems"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-700 mb-1">Bill Number *</label>
+                <input
+                  type="text"
+                  value={boqTemplateForm.billNumber}
+                  onChange={(e) => setBoqTemplateForm(prev => ({ ...prev, billNumber: e.target.value }))}
+                  className="w-full border text-gray-900 rounded-md px-3 py-2"
+                  placeholder="e.g., BOQ-001-2024"
+                  required
+                />
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-sm text-gray-700">Items</label>
+                  <button
+                    type="button"
+                    onClick={addBoqTemplateItem}
+                    className="text-green-600 hover:text-green-800 text-sm"
+                  >
+                    + Add Item
+                  </button>
+                </div>
+                
+                {boqTemplateForm.items.length === 0 ? (
+                  <div className="text-sm text-gray-500 text-center py-4 border-2 border-dashed border-gray-300 rounded-md">
+                    No items added yet. Click "Add Item" to start.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {boqTemplateForm.items.map((item, index) => (
+                      <div key={index} className="grid grid-cols-6 gap-2 p-2 border rounded-md">
+                        <input
+                          type="text"
+                          value={item.item}
+                          onChange={(e) => updateBoqTemplateItem(index, 'item', e.target.value)}
+                          placeholder="Item"
+                          className="text-gray-900 rounded px-2 py-1 text-sm"
+                        />
+                        <input
+                          type="text"
+                          value={item.description || ''}
+                          onChange={(e) => updateBoqTemplateItem(index, 'description', e.target.value)}
+                          placeholder="Description"
+                          className="text-gray-900 rounded px-2 py-1 text-sm"
+                        />
+                        <input
+                          type="number"
+                          value={item.quantity}
+                          onChange={(e) => updateBoqTemplateItem(index, 'quantity', Number(e.target.value))}
+                          placeholder="Qty"
+                          className="text-gray-900 rounded px-2 py-1 text-sm"
+                          min="0"
+                        />
+                        <input
+                          type="text"
+                          value={item.unit}
+                          onChange={(e) => updateBoqTemplateItem(index, 'unit', e.target.value)}
+                          placeholder="Unit"
+                          className="text-gray-900 rounded px-2 py-1 text-sm"
+                        />
+                        <input
+                          type="number"
+                          value={item.rate}
+                          onChange={(e) => updateBoqTemplateItem(index, 'rate', Number(e.target.value))}
+                          placeholder="Rate"
+                          className="text-gray-900 rounded px-2 py-1 text-sm"
+                          min="0"
+                          step="0.01"
+                        />
+                        <div className="flex items-center space-x-1">
+                          <span className="text-sm text-gray-600">{item.amount.toFixed(2)}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeBoqTemplateItem(index)}
+                            className="text-red-600 hover:text-red-800 text-sm"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  type="submit"
+                  disabled={boqTemplateLoading}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-60"
+                >
+                  {boqTemplateLoading ? 'Saving...' : (editingTemplate ? 'Update Template' : 'Create Template')}
+                </button>
+                <button
+                  type="button"
+                  onClick={resetBoqTemplateForm}
+                  className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="text-sm text-gray-500 text-center py-8">
+              Click "Create Template" to start creating a BOQ template.
             </div>
           )}
         </div>

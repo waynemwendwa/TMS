@@ -512,3 +512,220 @@ router.delete('/phases/:phaseId', requireAuth, async (req: Request, res: Respons
     res.status(500).json({ error: 'Failed to delete project phase' });
   }
 });
+
+// ===== BOQ TEMPLATE ENDPOINTS =====
+
+// Get all BOQ templates for a project
+router.get('/:id/boq-templates', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const templates = await prisma.boqTemplate.findMany({
+      where: { projectId: id },
+      include: {
+        items: true,
+        createdByUser: {
+          select: { id: true, name: true, email: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(templates);
+  } catch (error) {
+    console.error('Error fetching BOQ templates:', error);
+    res.status(500).json({ error: 'Failed to fetch BOQ templates' });
+  }
+});
+
+// Get a specific BOQ template with items
+router.get('/boq-templates/:templateId', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { templateId } = req.params;
+    const template = await prisma.boqTemplate.findUnique({
+      where: { id: templateId },
+      include: {
+        items: true,
+        project: {
+          select: { id: true, title: true }
+        },
+        createdByUser: {
+          select: { id: true, name: true, email: true }
+        }
+      }
+    });
+
+    if (!template) {
+      return res.status(404).json({ error: 'BOQ template not found' });
+    }
+
+    res.json(template);
+  } catch (error) {
+    console.error('Error fetching BOQ template:', error);
+    res.status(500).json({ error: 'Failed to fetch BOQ template' });
+  }
+});
+
+// Create a new BOQ template
+router.post('/:id/boq-templates', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { title, equipmentInstallationWorks, billNumber, items } = req.body as {
+      title: string;
+      equipmentInstallationWorks: string;
+      billNumber: string;
+      items: Array<{
+        item: string;
+        description?: string;
+        quantity: number;
+        unit: string;
+        rate: number;
+        amount: number;
+      }>;
+    };
+
+    // Validate required fields
+    if (!title || !equipmentInstallationWorks || !billNumber) {
+      return res.status(400).json({ 
+        error: 'Title, equipment installation works, and bill number are required' 
+      });
+    }
+
+    if (!items || items.length === 0) {
+      return res.status(400).json({ 
+        error: 'At least one item is required' 
+      });
+    }
+
+    // Create BOQ template with items in a transaction
+    const result = await prisma.$transaction(async (tx) => {
+      const template = await tx.boqTemplate.create({
+        data: {
+          projectId: id,
+          title,
+          equipmentInstallationWorks,
+          billNumber,
+          createdBy: req.user!.id
+        }
+      });
+
+      const templateItems = await tx.boqTemplateItem.createMany({
+        data: items.map(item => ({
+          boqTemplateId: template.id,
+          item: item.item,
+          description: item.description || null,
+          quantity: item.quantity,
+          unit: item.unit,
+          rate: item.rate,
+          amount: item.amount
+        }))
+      });
+
+      return { template, itemsCount: templateItems.count };
+    });
+
+    // Fetch the created template with items
+    const createdTemplate = await prisma.boqTemplate.findUnique({
+      where: { id: result.template.id },
+      include: {
+        items: true,
+        createdByUser: {
+          select: { id: true, name: true, email: true }
+        }
+      }
+    });
+
+    res.status(201).json(createdTemplate);
+  } catch (error) {
+    console.error('Error creating BOQ template:', error);
+    res.status(500).json({ error: 'Failed to create BOQ template' });
+  }
+});
+
+// Update a BOQ template
+router.put('/boq-templates/:templateId', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { templateId } = req.params;
+    const { title, equipmentInstallationWorks, billNumber, items } = req.body as {
+      title?: string;
+      equipmentInstallationWorks?: string;
+      billNumber?: string;
+      items?: Array<{
+        id?: string;
+        item: string;
+        description?: string;
+        quantity: number;
+        unit: string;
+        rate: number;
+        amount: number;
+      }>;
+    };
+
+    // Update template and items in a transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // Update template basic info
+      const template = await tx.boqTemplate.update({
+        where: { id: templateId },
+        data: {
+          ...(title && { title }),
+          ...(equipmentInstallationWorks && { equipmentInstallationWorks }),
+          ...(billNumber && { billNumber })
+        }
+      });
+
+      // Update items if provided
+      if (items) {
+        // Delete existing items
+        await tx.boqTemplateItem.deleteMany({
+          where: { boqTemplateId: templateId }
+        });
+
+        // Create new items
+        await tx.boqTemplateItem.createMany({
+          data: items.map(item => ({
+            boqTemplateId: templateId,
+            item: item.item,
+            description: item.description || null,
+            quantity: item.quantity,
+            unit: item.unit,
+            rate: item.rate,
+            amount: item.amount
+          }))
+        });
+      }
+
+      return template;
+    });
+
+    // Fetch the updated template with items
+    const updatedTemplate = await prisma.boqTemplate.findUnique({
+      where: { id: templateId },
+      include: {
+        items: true,
+        createdByUser: {
+          select: { id: true, name: true, email: true }
+        }
+      }
+    });
+
+    res.json(updatedTemplate);
+  } catch (error) {
+    console.error('Error updating BOQ template:', error);
+    res.status(500).json({ error: 'Failed to update BOQ template' });
+  }
+});
+
+// Delete a BOQ template
+router.delete('/boq-templates/:templateId', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { templateId } = req.params;
+    
+    // Delete template (items will be deleted automatically due to cascade)
+    await prisma.boqTemplate.delete({ 
+      where: { id: templateId } 
+    });
+    
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting BOQ template:', error);
+    res.status(500).json({ error: 'Failed to delete BOQ template' });
+  }
+});
