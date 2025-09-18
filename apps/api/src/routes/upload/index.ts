@@ -110,14 +110,18 @@ router.get('/view', (req: Request, res: Response) => {
     const decodedPath = decodeURIComponent(filePath);
     let absolutePath = path.isAbsolute(decodedPath) ? decodedPath : path.join(process.cwd(), decodedPath);
 
-    // Fallback: map old absolute paths from previous releases to current cwd
+    // Fallback: map old absolute paths from previous releases to current cwd more robustly
     if (!fs.existsSync(absolutePath)) {
-      const renderPrefix = '/opt/render/project/src/';
-      if (decodedPath.startsWith(renderPrefix)) {
-        const relFromRenderRoot = decodedPath.substring(renderPrefix.length);
-        const altPath = path.join(process.cwd(), relFromRenderRoot);
-        if (fs.existsSync(altPath)) {
-          absolutePath = altPath;
+      const renderRoot = '/opt/render/project/src';
+      const apiRoot = path.join(renderRoot, 'apps', 'api');
+      if (decodedPath.startsWith(renderRoot)) {
+        // Try computing path relative to api root then join with current cwd
+        const relFromApiRoot = path.relative(apiRoot, decodedPath);
+        if (!relFromApiRoot.startsWith('..')) {
+          const altPath = path.join(process.cwd(), relFromApiRoot);
+          if (fs.existsSync(altPath)) {
+            absolutePath = altPath;
+          }
         }
       }
     }
@@ -171,12 +175,15 @@ router.get('/download', (req: Request, res: Response) => {
     let absolutePath = path.isAbsolute(decodedPath) ? decodedPath : path.join(process.cwd(), decodedPath);
 
     if (!fs.existsSync(absolutePath)) {
-      const renderPrefix = '/opt/render/project/src/';
-      if (decodedPath.startsWith(renderPrefix)) {
-        const relFromRenderRoot = decodedPath.substring(renderPrefix.length);
-        const altPath = path.join(process.cwd(), relFromRenderRoot);
-        if (fs.existsSync(altPath)) {
-          absolutePath = altPath;
+      const renderRoot = '/opt/render/project/src';
+      const apiRoot = path.join(renderRoot, 'apps', 'api');
+      if (decodedPath.startsWith(renderRoot)) {
+        const relFromApiRoot = path.relative(apiRoot, decodedPath);
+        if (!relFromApiRoot.startsWith('..')) {
+          const altPath = path.join(process.cwd(), relFromApiRoot);
+          if (fs.existsSync(altPath)) {
+            absolutePath = altPath;
+          }
         }
       }
     }
