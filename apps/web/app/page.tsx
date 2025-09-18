@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getApiUrl } from "../lib/config";
+import ProjectAnalytics from "./components/ProjectAnalytics";
 
 export default function Home() {
   const [user, setUser] = useState<{ id: string; email: string; name: string; role: string } | null>(null);
@@ -263,6 +264,9 @@ function SiteSupervisorDashboard({ user, inventoryStats, projectStats }: { user:
           </Link>
         </div>
       </div>
+
+      {/* Project Analytics - Limited to assigned project */}
+      <ProjectAnalytics user={user} />
     </div>
   );
 }
@@ -413,6 +417,9 @@ function TMSDashboard({ user, inventoryStats, projectStats }: { user: any, inven
           </Link>
         </div>
       </div>
+
+      {/* Project Analytics */}
+      <ProjectAnalytics user={user} />
 
       {/* System Status */}
       <div className="bg-white rounded-lg shadow-md p-6">

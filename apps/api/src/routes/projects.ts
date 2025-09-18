@@ -87,6 +87,124 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
   }
 });
 
+// Get project analytics with phase progress
+router.get('/analytics', requireAuth, async (req: Request, res: Response) => {
+  try {
+    // Limit site supervisors to their assignment
+    let where: any = {};
+    if (req.user?.role === 'SITE_SUPERVISOR') {
+      const assignment = await prisma.siteSupervisorAssignment.findUnique({ where: { userId: req.user.id } });
+      if (!assignment) return res.json([]);
+      where = { id: assignment.projectId };
+    }
+
+    const projects = await prisma.project.findMany({
+      where,
+      include: {
+        projectPhases: {
+          orderBy: { weekNumber: 'asc' }
+        },
+        createdByUser: {
+          select: { id: true, name: true, email: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    // Calculate analytics for each project
+    const analytics = projects.map(project => {
+      const phases = project.projectPhases;
+      const totalPhases = phases.length;
+      
+      // Calculate progress based on phase status
+      const completedPhases = phases.filter(phase => phase.status === 'COMPLETED').length;
+      const inProgressPhases = phases.filter(phase => phase.status === 'IN_PROGRESS').length;
+      const plannedPhases = phases.filter(phase => phase.status === 'PLANNED').length;
+      const delayedPhases = phases.filter(phase => phase.status === 'DELAYED').length;
+      
+      // Calculate progress percentage
+      let progressPercentage = 0;
+      if (totalPhases > 0) {
+        progressPercentage = Math.round((completedPhases / totalPhases) * 100);
+      }
+      
+      // Calculate time-based progress if phases have dates
+      let timeProgressPercentage = 0;
+      const phasesWithDates = phases.filter(phase => phase.startDate && phase.endDate);
+      if (phasesWithDates.length > 0) {
+        const now = new Date();
+        let totalTimeProgress = 0;
+        
+        phasesWithDates.forEach(phase => {
+          const startDate = new Date(phase.startDate!);
+          const endDate = new Date(phase.endDate!);
+          const totalDuration = endDate.getTime() - startDate.getTime();
+          const elapsed = Math.max(0, Math.min(now.getTime() - startDate.getTime(), totalDuration));
+          const phaseProgress = totalDuration > 0 ? (elapsed / totalDuration) * 100 : 0;
+          totalTimeProgress += phaseProgress;
+        });
+        
+        timeProgressPercentage = Math.round(totalTimeProgress / phasesWithDates.length);
+      }
+      
+      // Overall progress (average of status-based and time-based)
+      const overallProgress = phasesWithDates.length > 0 
+        ? Math.round((progressPercentage + timeProgressPercentage) / 2)
+        : progressPercentage;
+      
+      // Calculate days remaining/overdue
+      let daysRemaining = null;
+      if (project.endDate) {
+        const endDate = new Date(project.endDate);
+        const now = new Date();
+        const diffTime = endDate.getTime() - now.getTime();
+        daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      }
+      
+      // Determine project health status
+      let healthStatus = 'healthy';
+      if (delayedPhases > 0) healthStatus = 'delayed';
+      else if (daysRemaining !== null && daysRemaining < 0) healthStatus = 'overdue';
+      else if (daysRemaining !== null && daysRemaining < 7) healthStatus = 'urgent';
+      
+      return {
+        id: project.id,
+        title: project.title,
+        description: project.description,
+        status: project.status,
+        startDate: project.startDate,
+        endDate: project.endDate,
+        createdBy: project.createdByUser,
+        totalPhases,
+        completedPhases,
+        inProgressPhases,
+        plannedPhases,
+        delayedPhases,
+        progressPercentage: overallProgress,
+        timeProgressPercentage,
+        daysRemaining,
+        healthStatus,
+        phases: phases.map(phase => ({
+          id: phase.id,
+          phaseName: phase.phaseName,
+          description: phase.description,
+          startDate: phase.startDate,
+          endDate: phase.endDate,
+          status: phase.status,
+          weekNumber: phase.weekNumber,
+          tasks: phase.tasks,
+          materials: phase.materials
+        }))
+      };
+    });
+
+    res.json(analytics);
+  } catch (error) {
+    console.error('Error fetching project analytics:', error);
+    res.status(500).json({ error: 'Failed to fetch project analytics' });
+  }
+});
+
 // Get single project
 router.get('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
