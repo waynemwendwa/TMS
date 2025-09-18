@@ -210,32 +210,8 @@ function SiteSupervisorDashboard({ user, inventoryStats, projectStats }: { user:
         <p className="text-blue-100">Site Supervisor Dashboard</p>
       </div>
 
-      {/* Key Stats (read-only overview) */}
+      {/* Project Stats (read-only overview) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <span className="text-2xl">📦</span>
-            </div>
-            <div className="ml-4">
-              <div className="text-2xl font-bold text-blue-600">{inventoryStats.totalItems}</div>
-              <div className="text-sm text-gray-600">Total Items</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <span className="text-2xl">⚠️</span>
-            </div>
-            <div className="ml-4">
-              <div className="text-2xl font-bold text-orange-600">{inventoryStats.lowStockItems}</div>
-              <div className="text-sm text-gray-600">Low Stock</div>
-            </div>
-          </div>
-        </div>
-
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center">
             <div className="p-2 bg-green-100 rounded-lg">
@@ -243,25 +219,56 @@ function SiteSupervisorDashboard({ user, inventoryStats, projectStats }: { user:
             </div>
             <div className="ml-4">
               <div className="text-2xl font-bold text-green-600">{projectStats.ongoingProjects}</div>
-              <div className="text-sm text-gray-600">Active Projects</div>
+              <div className="text-sm text-gray-600">Assigned Project</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <span className="text-2xl">📋</span>
+            </div>
+            <div className="ml-4">
+              <div className="text-2xl font-bold text-blue-600">BOQ</div>
+              <div className="text-sm text-gray-600">Bill of Quantities</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <span className="text-2xl">📝</span>
+            </div>
+            <div className="ml-4">
+              <div className="text-2xl font-bold text-purple-600">Orders</div>
+              <div className="text-sm text-gray-600">Order Management</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Quick Links limited */}
+      {/* Quick Actions for Site Supervisors */}
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Links</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Link href="/inventory" className="bg-blue-600 text-white text-center px-4 py-3 rounded-md hover:bg-blue-700 transition-colors">
-            📦 View Inventory
-          </Link>
           <Link href="/projects" className="bg-green-600 text-white text-center px-4 py-3 rounded-md hover:bg-green-700 transition-colors">
-            🏗️ View Projects
+            🏗️ View My Project
           </Link>
-          <Link href="/reports" className="bg-gray-700 text-white text-center px-4 py-3 rounded-md hover:bg-gray-800 transition-colors">
-            📑 View Reports
+          <Link href="/projects" className="bg-blue-600 text-white text-center px-4 py-3 rounded-md hover:bg-blue-700 transition-colors">
+            📋 View BOQ Templates
           </Link>
+          <Link href="/projects" className="bg-purple-600 text-white text-center px-4 py-3 rounded-md hover:bg-purple-700 transition-colors">
+            📝 Create Order
+          </Link>
+        </div>
+        <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+          <h4 className="font-medium text-blue-900 mb-2">📋 Order Management Guide</h4>
+          <p className="text-sm text-blue-700">
+            Create orders using either the <strong>Order Template</strong> (fill out form) or <strong>Upload Order Document</strong> (PDF/Excel). 
+            Compare your orders with BOQ to ensure proper material usage.
+          </p>
         </div>
       </div>
 

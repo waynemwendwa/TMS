@@ -120,6 +120,7 @@ export default function ProjectDetailsPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [user, setUser] = useState<{ id: string; name: string; email: string; role: string } | null>(null);
 
   const [prelimDocs, setPrelimDocs] = useState<ProjectDocument[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -213,7 +214,7 @@ export default function ProjectDetailsPage() {
       setError(null);
       try {
         const tokenHeader = { headers: { Authorization: `Bearer ${token}` } } as const;
-        const [projRes, docsRes, boqRes, procsRes, phasesRes, boqTemplatesRes, orderTemplatesRes] = await Promise.all([
+        const [projRes, docsRes, boqRes, procsRes, phasesRes, boqTemplatesRes, orderTemplatesRes, userRes] = await Promise.all([
           fetch(getApiUrl(`/api/projects/${projectId}`), {
             ...tokenHeader
           }),
@@ -233,6 +234,9 @@ export default function ProjectDetailsPage() {
             ...tokenHeader
           }),
           fetch(getApiUrl(`/api/projects/${projectId}/order-templates`), {
+            ...tokenHeader
+          }),
+          fetch(getApiUrl(`/api/auth/me`), {
             ...tokenHeader
           })
         ]);
@@ -260,6 +264,9 @@ export default function ProjectDetailsPage() {
         }
         if (orderTemplatesRes.ok) {
           setOrderTemplates(await orderTemplatesRes.json());
+        }
+        if (userRes.ok) {
+          setUser(await userRes.json());
         }
       } catch {
         setError("Failed to load project");
@@ -920,9 +927,11 @@ export default function ProjectDetailsPage() {
         <p className="text-gray-600">{project.description}</p>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Preliminary Planning Upload */}
-        <div className="bg-white rounded-lg shadow p-5 lg:col-span-1">
+      {/* Preliminary Planning Documents - Hidden for Site Supervisors */}
+      {user?.role !== 'SITE_SUPERVISOR' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Preliminary Planning Upload */}
+          <div className="bg-white rounded-lg shadow p-5 lg:col-span-1">
           <h2 className="text-lg font-semibold text-gray-900 mb-3">Preliminary Planning Documents</h2>
           <form onSubmit={onUpload} className="space-y-3">
             <div>
@@ -998,8 +1007,9 @@ export default function ProjectDetailsPage() {
           )}
         </div>
       </div>
+      )}
 
-      {/* BOQ Upload and List */}
+      {/* BOQ Upload and List - Visible to all users */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="bg-white rounded-lg shadow p-5">
           <h2 className="text-lg font-semibold text-gray-900 mb-3">BOQ Documents</h2>
@@ -1035,7 +1045,375 @@ export default function ProjectDetailsPage() {
         </div>
       </div>
 
-      {/* BOQ Templates */}
+
+      {/* Order Templates & Comparison */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-lg shadow p-5">
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="text-lg font-semibold text-gray-900">Order Templates</h2>
+            <button
+              onClick={() => setShowOrderForm(true)}
+              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors text-sm"
+            >
+              New Order
+            </button>
+          </div>
+          {orderTemplateError && <div className="text-sm text-red-600 mb-3">{orderTemplateError}</div>}
+          {orderTemplateSuccess && <div className="text-sm text-green-700 mb-3">{orderTemplateSuccess}</div>}
+          {orderTemplates.length === 0 ? (
+            <div className="text-sm text-gray-500">No order templates yet.</div>
+          ) : (
+            <div className="space-y-3">
+              {orderTemplates.map((t) => (
+                <div key={t.id} className="p-3 border rounded-md flex items-center justify-between">
+                  <div className="mr-3">
+                    <div className="font-medium text-gray-900">{t.title}</div>
+                    <div className="text-xs text-gray-500">{t.items.length} items • by {t.createdByUser.name}</div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button className="text-blue-600 hover:text-blue-800 text-sm" onClick={() => runComparison(t.id)}>Compare to BOQ</button>
+                    <button className="text-red-600 hover:text-red-800 text-sm" onClick={() => deleteOrderTemplate(t.id)}>Delete</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-5">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Upload Order Document</h2>
+          <form onSubmit={onUploadOrderDoc} className="space-y-3">
+            <div>
+              <label className="block text-sm text-gray-700 mb-1">Files</label>
+              <input type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={(e) => setOrderFiles(e.target.files)} className="w-full text-gray-900"/>
+            </div>
+            <button type="submit" disabled={orderUploading || !orderFiles || orderFiles.length === 0} className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors disabled:opacity-60" aria-busy={orderUploading}>
+              {orderUploading ? 'Uploading...' : 'Upload Order'}
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {showOrderForm && (
+        <div className="bg-white rounded-lg shadow p-5">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">New Order Template</h2>
+          <form onSubmit={submitOrderTemplate} className="space-y-4">
+            <input className="border text-gray-900 rounded-md px-3 py-2 w-full" placeholder="Title" value={orderForm.title} onChange={(e) => setOrderForm((p) => ({ ...p, title: e.target.value }))} />
+            <input className="border text-gray-900 rounded-md px-3 py-2 w-full" placeholder="Description (optional)" value={orderForm.description} onChange={(e) => setOrderForm((p) => ({ ...p, description: e.target.value }))} />
+
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-sm text-gray-700">Items</label>
+              <button type="button" onClick={addOrderItem} className="text-green-600 hover:text-green-800 text-sm">+ Add Item</button>
+            </div>
+            {orderForm.items.length === 0 ? (
+              <div className="text-sm text-gray-500 text-center py-4 border-2 border-dashed border-gray-300 rounded-md">No items. Click + Add Item.</div>
+            ) : (
+              <div className="space-y-2">
+                {orderForm.items.map((it, idx) => (
+                  <div key={idx} className="grid grid-cols-6 gap-2 p-2 border rounded-md">
+                    <input type="text" value={it.item} onChange={(e) => updateOrderItem(idx, 'item', e.target.value)} placeholder="Item" className="text-gray-900 rounded px-2 py-1 text-sm"/>
+                    <input type="text" value={it.description || ''} onChange={(e) => updateOrderItem(idx, 'description', e.target.value)} placeholder="Description" className="text-gray-900 rounded px-2 py-1 text-sm"/>
+                    <input type="number" value={it.quantity} onChange={(e) => updateOrderItem(idx, 'quantity', Number(e.target.value))} placeholder="Qty" className="text-gray-900 rounded px-2 py-1 text-sm" min="0"/>
+                    <input type="text" value={it.unit} onChange={(e) => updateOrderItem(idx, 'unit', e.target.value)} placeholder="Unit" className="text-gray-900 rounded px-2 py-1 text-sm"/>
+                    <input type="number" value={it.rate} onChange={(e) => updateOrderItem(idx, 'rate', Number(e.target.value))} placeholder="Rate" className="text-gray-900 rounded px-2 py-1 text-sm" min="0" step="0.01"/>
+                    <div className="flex items-center space-x-1">
+                      <span className="text-sm text-gray-600">{it.amount.toFixed(2)}</span>
+                      <button type="button" onClick={() => removeOrderItem(idx)} className="text-red-600 hover:text-red-800 text-sm">×</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex space-x-3">
+              <button type="submit" disabled={orderTemplateLoading} className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-60">
+                {orderTemplateLoading ? 'Saving...' : 'Create Order'}
+              </button>
+              <button type="button" onClick={resetOrderForm} className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors">Cancel</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Comparison Table */}
+      {compareTemplateId && (
+        <div className="bg-white rounded-lg shadow p-5">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Order vs BOQ Comparison</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full border">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="text-left text-sm font-semibold text-gray-700 px-3 py-2 border">Item</th>
+                  <th className="text-right text-sm font-semibold text-gray-700 px-3 py-2 border">Order Qty</th>
+                  <th className="text-right text-sm font-semibold text-gray-700 px-3 py-2 border">BOQ Qty</th>
+                  <th className="text-left text-sm font-semibold text-gray-700 px-3 py-2 border">Alert</th>
+                </tr>
+              </thead>
+              <tbody>
+                {comparisonRows.map((r, i) => (
+                  <tr key={i} className={r.alert ? 'bg-red-50' : ''}>
+                    <td className="px-3 py-2 border text-gray-900">{r.item}</td>
+                    <td className="px-3 py-2 border text-right text-gray-900">{r.orderQty}</td>
+                    <td className="px-3 py-2 border text-right text-gray-900">{r.boqQty}</td>
+                    <td className="px-3 py-2 border">{r.alert ? <span className="text-red-700 text-sm font-medium">Exceeds BOQ</span> : <span className="text-green-700 text-sm">OK</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Stakeholders - Hidden for Site Supervisors */}
+      {user?.role !== 'SITE_SUPERVISOR' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-lg shadow p-5">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Add Stakeholder</h2>
+          <form onSubmit={addStakeholder} className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Name" value={newStakeholder.name} onChange={(e) => setNewStakeholder({ ...newStakeholder, name: e.target.value })} />
+            <select className="border text-gray-900 rounded-md px-3 py-2" value={newStakeholder.role} onChange={(e) => setNewStakeholder({ ...newStakeholder, role: e.target.value })}>
+              <option>MAIN_CONTRACTOR</option>
+              <option>CLIENT</option>
+              <option>CONSULTANT</option>
+              <option>STRUCTURAL_ENGINEER</option>
+              <option>ARCHITECT</option>
+              <option>QUANTITY_SURVEYOR</option>
+              <option>SUB_CONTRACTOR</option>
+              <option>LAW_FIRM</option>
+            </select>
+            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Email" value={newStakeholder.email} onChange={(e) => setNewStakeholder({ ...newStakeholder, email: e.target.value })} />
+            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Phone" value={newStakeholder.phone} onChange={(e) => setNewStakeholder({ ...newStakeholder, phone: e.target.value })} />
+            <input className="border text-gray-900 rounded-md px-3 py-2 md:col-span-2" placeholder="Location" value={newStakeholder.location} onChange={(e) => setNewStakeholder({ ...newStakeholder, location: e.target.value })} />
+            <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors md:col-span-2">Add Stakeholder</button>
+          </form>
+        </div>
+        <div className="bg-white rounded-lg shadow p-5">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Stakeholders</h2>
+          {stakeholderError && <div className="mb-3 text-sm text-red-600">{stakeholderError}</div>}
+          {stakeholders.length === 0 ? (
+            <div className="text-sm text-gray-500">No stakeholders yet.</div>
+          ) : (
+            <div className="space-y-2">
+              {stakeholders.map((s) => (
+                <div key={s.id} className="p-3 border rounded-md">
+                  <div className="font-medium text-gray-900">{s.name} <span className="text-xs text-gray-500">({s.role})</span></div>
+                  <div className="text-xs text-gray-500">{s.name ? `${s.email || '-' } • ${s.phone || '-' } • ${s.location || '-'}` : '-'}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      )}
+
+      {/* Procurement & Phases - Hidden for Site Supervisors */}
+      {user?.role !== 'SITE_SUPERVISOR' && (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-lg shadow p-5">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Procurement Items</h2>
+          {procError && <div className="mb-3 text-sm text-red-600">{procError}</div>}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-gray-600">Filter:</span>
+              <select className="border text-gray-900 rounded px-2 py-1" value={procStatusFilter} onChange={(e)=>setProcStatusFilter(e.target.value as 'ALL' | ProcurementStatus)}>
+                <option value="ALL">All</option>
+                <option value="PENDING">Pending</option>
+                <option value="QUOTED">Quoted</option>
+                <option value="APPROVED">Approved</option>
+                <option value="ORDERED">Ordered</option>
+                <option value="DELIVERED">Delivered</option>
+              </select>
+            </div>
+            <button onClick={exportProcurementCSV} className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1 rounded">Export CSV</button>
+          </div>
+          <form onSubmit={addProcurement} className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Item name" value={newProc.itemName} onChange={(e) => setNewProc({ ...newProc, itemName: e.target.value })} />
+            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Quantity" type="number" min={1} value={newProc.quantity} onChange={(e) => setNewProc({ ...newProc, quantity: Number(e.target.value) })} />
+            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Unit" value={newProc.unit} onChange={(e) => setNewProc({ ...newProc, unit: e.target.value })} />
+            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Estimated Cost" value={newProc.estimatedCost} onChange={(e) => setNewProc({ ...newProc, estimatedCost: e.target.value })} />
+            <input className="border text-gray-900 rounded-md px-3 py-2 md:col-span-2" placeholder="Description (optional)" value={newProc.description} onChange={(e) => setNewProc({ ...newProc, description: e.target.value })} />
+            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors md:col-span-2">Add Item</button>
+          </form>
+          <div className="text-sm text-gray-600 mb-2">Assess recommended suppliers and costs below. You can export a CSV for the chairman.</div>
+          {procurements.length === 0 ? (
+            <div className="text-sm text-gray-500">No procurement items yet.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="text-left text-gray-600">
+                    <th className="p-2">Item</th>
+                    <th className="p-2">Qty</th>
+                    <th className="p-2">Unit</th>
+                    <th className="p-2">Supplier</th>
+                    <th className="p-2">Estimated</th>
+                    <th className="p-2">Actual</th>
+                    <th className="p-2">Status</th>
+                    <th className="p-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {procurements
+                    .filter((p)=> procStatusFilter==='ALL' ? true : p.status === procStatusFilter)
+                    .map((p) => (
+                    <tr key={p.id} className="border-t">
+                      <td className="p-2">
+                        <div className="font-medium text-gray-900">{p.itemName}</div>
+                        <div className="text-xs text-gray-500">{p.description || '-'}</div>
+                      </td>
+                      <td className="p-2">{p.quantity}</td>
+                      <td className="p-2">{p.unit}</td>
+                      <td className="p-2">
+                        <input className="border rounded px-2 py-1 w-36" placeholder="Supplier"
+                          defaultValue={p.supplierId || ''}
+                          onBlur={(e) => updateProcurement(p.id, { supplierId: e.target.value })}
+                          disabled={updatingProcId === p.id}
+                        />
+                      </td>
+                      <td className="p-2">
+                        <input className="border rounded px-2 py-1 w-28" placeholder="0.00"
+                          defaultValue={p.estimatedCost || ''}
+                          onBlur={(e) => updateProcurement(p.id, { estimatedCost: e.target.value })}
+                          disabled={updatingProcId === p.id}
+                        />
+                      </td>
+                      <td className="p-2">
+                        <input className="border rounded px-2 py-1 w-28" placeholder="0.00"
+                          defaultValue={p.actualCost || ''}
+                          onBlur={(e) => updateProcurement(p.id, { actualCost: e.target.value })}
+                          disabled={updatingProcId === p.id}
+                        />
+                      </td>
+                      <td className="p-2">
+                        <select className="border rounded px-2 py-1"
+                          defaultValue={p.status}
+                          onChange={(e) => updateProcurement(p.id, { status: e.target.value as ProcurementStatus })}
+                          disabled={updatingProcId === p.id}
+                        >
+                          <option value="PENDING">PENDING</option>
+                          <option value="QUOTED">QUOTED</option>
+                          <option value="APPROVED">APPROVED</option>
+                          <option value="ORDERED">ORDERED</option>
+                          <option value="DELIVERED">DELIVERED</option>
+                        </select>
+                      </td>
+                      <td className="p-2 text-right">
+                        <button className="text-xs text-gray-600 hover:text-gray-800" onClick={() => updateProcurement(p.id, { status: 'APPROVED' })} disabled={updatingProcId === p.id}>Approve</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Supplier Comparison */}
+          <div className="mt-6">
+            <h3 className="text-md font-semibold text-gray-900 mb-2">Supplier Comparison</h3>
+            {supplierSummary.length === 0 ? (
+              <div className="text-sm text-gray-500">No supplier data available.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-gray-600">
+                      <th className="p-2">Supplier</th>
+                      <th className="p-2">Items</th>
+                      <th className="p-2">Est. Total</th>
+                      <th className="p-2">Act. Total</th>
+                      <th className="p-2">Recommendation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {supplierSummary.map((s, idx) => (
+                      <tr key={s.supplier} className="border-t">
+                        <td className="p-2">{s.supplier}</td>
+                        <td className="p-2">{s.items}</td>
+                        <td className="p-2">{s.estTotal.toLocaleString()}</td>
+                        <td className="p-2">{s.actTotal ? s.actTotal.toLocaleString() : '-'}</td>
+                        <td className="p-2">{idx === 0 ? <span className="px-2 py-1 text-xs rounded bg-green-100 text-green-800">Lowest Est. Total</span> : '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="bg-white rounded-lg shadow p-5">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Project Phases</h2>
+          {phaseError && <div className="mb-3 text-sm text-red-600">{phaseError}</div>}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-gray-600">Filter:</span>
+              <select className="border rounded px-2 py-1" value={phaseStatusFilter} onChange={(e)=>setPhaseStatusFilter(e.target.value as 'ALL' | PhaseStatus)}>
+                <option value="ALL">All</option>
+                <option value="PLANNED">Planned</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="DELAYED">Delayed</option>
+              </select>
+            </div>
+          </div>
+          <form onSubmit={addPhase} className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Phase name" value={newPhase.phaseName} onChange={(e) => setNewPhase({ ...newPhase, phaseName: e.target.value })} />
+            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Week number" type="number" min={1} value={newPhase.weekNumber} onChange={(e) => setNewPhase({ ...newPhase, weekNumber: Number(e.target.value) })} />
+            <select className="border text-gray-900 rounded-md px-3 py-2" value={newPhase.status} onChange={(e) => setNewPhase({ ...newPhase, status: e.target.value })}>
+              <option>PLANNED</option>
+              <option>IN_PROGRESS</option>
+              <option>COMPLETED</option>
+              <option>DELAYED</option>
+            </select>
+            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Start date" type="date" value={newPhase.startDate} onChange={(e) => setNewPhase({ ...newPhase, startDate: e.target.value })} />
+            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="End date" type="date" value={newPhase.endDate} onChange={(e) => setNewPhase({ ...newPhase, endDate: e.target.value })} />
+            <input className="border text-gray-900 rounded-md px-3 py-2 md:col-span-2" placeholder="Tasks (comma separated)" value={newPhase.tasks} onChange={(e) => setNewPhase({ ...newPhase, tasks: e.target.value })} />
+            <input className="border text-gray-900 rounded-md px-3 py-2 md:col-span-2" placeholder="Materials (comma separated)" value={newPhase.materials} onChange={(e) => setNewPhase({ ...newPhase, materials: e.target.value })} />
+            <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors md:col-span-2">Add Phase</button>
+          </form>
+          {phases.length === 0 ? (
+            <div className="text-sm text-gray-500">No phases yet.</div>
+          ) : (
+            <div className="space-y-2">
+              {phases
+                .filter((ph)=> phaseStatusFilter==='ALL' ? true : ph.status === phaseStatusFilter)
+                .map((ph) => (
+                <div key={ph.id} className="p-3 border rounded-md">
+                  <div className="flex items-center justify-between">
+                    <div className="font-medium text-gray-900">Week {ph.weekNumber}: {ph.phaseName}</div>
+                    <select className="border text-gray-900 rounded px-2 py-1 text-xs" defaultValue={ph.status} onChange={(e)=>updatePhase(ph.id, { status: e.target.value as PhaseStatus })} disabled={updatingPhaseId===ph.id}>
+                      <option>PLANNED</option>
+                      <option>IN_PROGRESS</option>
+                      <option>COMPLETED</option>
+                      <option>DELAYED</option>
+                    </select>
+                  </div>
+                  <div className="text-xs text-gray-500 mb-2">{ph.description || '-'}</div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <div className="text-gray-600">Start</div>
+                      <input type="date" className="border text-gray-900 rounded px-2 py-1 w-full" defaultValue={ph.startDate?.substring(0,10)} onBlur={(e)=>updatePhase(ph.id, { startDate: e.target.value })} disabled={updatingPhaseId===ph.id} />
+                    </div>
+                    <div>
+                      <div className="text-gray-600">End</div>
+                      <input type="date" className="border text-gray-900 rounded px-2 py-1 w-full" defaultValue={ph.endDate?.substring(0,10)} onBlur={(e)=>updatePhase(ph.id, { endDate: e.target.value })} disabled={updatingPhaseId===ph.id} />
+                    </div>
+                    <div className="md:col-span-2">
+                      <div className="text-gray-600">Tasks (comma separated)</div>
+                      <input className="border text-gray-900 rounded px-2 py-1 w-full" defaultValue={(ph.tasks||[]).join(', ')} onBlur={(e)=>updatePhase(ph.id, { tasks: e.target.value })} disabled={updatingPhaseId===ph.id} />
+                    </div>
+                    <div className="md:col-span-2">
+                      <div className="text-gray-600">Materials (comma separated)</div>
+                      <input className="border text-gray-900 rounded px-2 py-1 w-full" defaultValue={(ph.materials||[]).join(', ')} onBlur={(e)=>updatePhase(ph.id, { materials: e.target.value })} disabled={updatingPhaseId===ph.id} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      )}
+
+      {/* BOQ Templates - Visible to all users */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg shadow p-5">
           <div className="flex justify-between items-center mb-3">
@@ -1244,371 +1622,6 @@ export default function ProjectDetailsPage() {
           )}
         </div>
       </div>
-
-      {/* Order Templates & Comparison */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow p-5">
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="text-lg font-semibold text-gray-900">Order Templates</h2>
-            <button
-              onClick={() => setShowOrderForm(true)}
-              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors text-sm"
-            >
-              New Order
-            </button>
-          </div>
-          {orderTemplateError && <div className="text-sm text-red-600 mb-3">{orderTemplateError}</div>}
-          {orderTemplateSuccess && <div className="text-sm text-green-700 mb-3">{orderTemplateSuccess}</div>}
-          {orderTemplates.length === 0 ? (
-            <div className="text-sm text-gray-500">No order templates yet.</div>
-          ) : (
-            <div className="space-y-3">
-              {orderTemplates.map((t) => (
-                <div key={t.id} className="p-3 border rounded-md flex items-center justify-between">
-                  <div className="mr-3">
-                    <div className="font-medium text-gray-900">{t.title}</div>
-                    <div className="text-xs text-gray-500">{t.items.length} items • by {t.createdByUser.name}</div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button className="text-blue-600 hover:text-blue-800 text-sm" onClick={() => runComparison(t.id)}>Compare to BOQ</button>
-                    <button className="text-red-600 hover:text-red-800 text-sm" onClick={() => deleteOrderTemplate(t.id)}>Delete</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-5">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Upload Order Document</h2>
-          <form onSubmit={onUploadOrderDoc} className="space-y-3">
-            <div>
-              <label className="block text-sm text-gray-700 mb-1">Files</label>
-              <input type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={(e) => setOrderFiles(e.target.files)} className="w-full text-gray-900"/>
-            </div>
-            <button type="submit" disabled={orderUploading || !orderFiles || orderFiles.length === 0} className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors disabled:opacity-60" aria-busy={orderUploading}>
-              {orderUploading ? 'Uploading...' : 'Upload Order'}
-            </button>
-          </form>
-        </div>
-      </div>
-
-      {showOrderForm && (
-        <div className="bg-white rounded-lg shadow p-5">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">New Order Template</h2>
-          <form onSubmit={submitOrderTemplate} className="space-y-4">
-            <input className="border text-gray-900 rounded-md px-3 py-2 w-full" placeholder="Title" value={orderForm.title} onChange={(e) => setOrderForm((p) => ({ ...p, title: e.target.value }))} />
-            <input className="border text-gray-900 rounded-md px-3 py-2 w-full" placeholder="Description (optional)" value={orderForm.description} onChange={(e) => setOrderForm((p) => ({ ...p, description: e.target.value }))} />
-
-            <div className="flex justify-between items-center mb-2">
-              <label className="block text-sm text-gray-700">Items</label>
-              <button type="button" onClick={addOrderItem} className="text-green-600 hover:text-green-800 text-sm">+ Add Item</button>
-            </div>
-            {orderForm.items.length === 0 ? (
-              <div className="text-sm text-gray-500 text-center py-4 border-2 border-dashed border-gray-300 rounded-md">No items. Click + Add Item.</div>
-            ) : (
-              <div className="space-y-2">
-                {orderForm.items.map((it, idx) => (
-                  <div key={idx} className="grid grid-cols-6 gap-2 p-2 border rounded-md">
-                    <input type="text" value={it.item} onChange={(e) => updateOrderItem(idx, 'item', e.target.value)} placeholder="Item" className="text-gray-900 rounded px-2 py-1 text-sm"/>
-                    <input type="text" value={it.description || ''} onChange={(e) => updateOrderItem(idx, 'description', e.target.value)} placeholder="Description" className="text-gray-900 rounded px-2 py-1 text-sm"/>
-                    <input type="number" value={it.quantity} onChange={(e) => updateOrderItem(idx, 'quantity', Number(e.target.value))} placeholder="Qty" className="text-gray-900 rounded px-2 py-1 text-sm" min="0"/>
-                    <input type="text" value={it.unit} onChange={(e) => updateOrderItem(idx, 'unit', e.target.value)} placeholder="Unit" className="text-gray-900 rounded px-2 py-1 text-sm"/>
-                    <input type="number" value={it.rate} onChange={(e) => updateOrderItem(idx, 'rate', Number(e.target.value))} placeholder="Rate" className="text-gray-900 rounded px-2 py-1 text-sm" min="0" step="0.01"/>
-                    <div className="flex items-center space-x-1">
-                      <span className="text-sm text-gray-600">{it.amount.toFixed(2)}</span>
-                      <button type="button" onClick={() => removeOrderItem(idx)} className="text-red-600 hover:text-red-800 text-sm">×</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="flex space-x-3">
-              <button type="submit" disabled={orderTemplateLoading} className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-60">
-                {orderTemplateLoading ? 'Saving...' : 'Create Order'}
-              </button>
-              <button type="button" onClick={resetOrderForm} className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors">Cancel</button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Comparison Table */}
-      {compareTemplateId && (
-        <div className="bg-white rounded-lg shadow p-5">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Order vs BOQ Comparison</h2>
-          <div className="overflow-x-auto">
-            <table className="min-w-full border">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="text-left text-sm font-semibold text-gray-700 px-3 py-2 border">Item</th>
-                  <th className="text-right text-sm font-semibold text-gray-700 px-3 py-2 border">Order Qty</th>
-                  <th className="text-right text-sm font-semibold text-gray-700 px-3 py-2 border">BOQ Qty</th>
-                  <th className="text-left text-sm font-semibold text-gray-700 px-3 py-2 border">Alert</th>
-                </tr>
-              </thead>
-              <tbody>
-                {comparisonRows.map((r, i) => (
-                  <tr key={i} className={r.alert ? 'bg-red-50' : ''}>
-                    <td className="px-3 py-2 border text-gray-900">{r.item}</td>
-                    <td className="px-3 py-2 border text-right text-gray-900">{r.orderQty}</td>
-                    <td className="px-3 py-2 border text-right text-gray-900">{r.boqQty}</td>
-                    <td className="px-3 py-2 border">{r.alert ? <span className="text-red-700 text-sm font-medium">Exceeds BOQ</span> : <span className="text-green-700 text-sm">OK</span>}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Stakeholders */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow p-5">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Add Stakeholder</h2>
-          <form onSubmit={addStakeholder} className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Name" value={newStakeholder.name} onChange={(e) => setNewStakeholder({ ...newStakeholder, name: e.target.value })} />
-            <select className="border text-gray-900 rounded-md px-3 py-2" value={newStakeholder.role} onChange={(e) => setNewStakeholder({ ...newStakeholder, role: e.target.value })}>
-              <option>MAIN_CONTRACTOR</option>
-              <option>CLIENT</option>
-              <option>CONSULTANT</option>
-              <option>STRUCTURAL_ENGINEER</option>
-              <option>ARCHITECT</option>
-              <option>QUANTITY_SURVEYOR</option>
-              <option>SUB_CONTRACTOR</option>
-              <option>LAW_FIRM</option>
-            </select>
-            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Email" value={newStakeholder.email} onChange={(e) => setNewStakeholder({ ...newStakeholder, email: e.target.value })} />
-            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Phone" value={newStakeholder.phone} onChange={(e) => setNewStakeholder({ ...newStakeholder, phone: e.target.value })} />
-            <input className="border text-gray-900 rounded-md px-3 py-2 md:col-span-2" placeholder="Location" value={newStakeholder.location} onChange={(e) => setNewStakeholder({ ...newStakeholder, location: e.target.value })} />
-            <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors md:col-span-2">Add Stakeholder</button>
-          </form>
-        </div>
-        <div className="bg-white rounded-lg shadow p-5">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Stakeholders</h2>
-          {stakeholderError && <div className="mb-3 text-sm text-red-600">{stakeholderError}</div>}
-          {stakeholders.length === 0 ? (
-            <div className="text-sm text-gray-500">No stakeholders yet.</div>
-          ) : (
-            <div className="space-y-2">
-              {stakeholders.map((s) => (
-                <div key={s.id} className="p-3 border rounded-md">
-                  <div className="font-medium text-gray-900">{s.name} <span className="text-xs text-gray-500">({s.role})</span></div>
-                  <div className="text-xs text-gray-500">{s.name ? `${s.email || '-' } • ${s.phone || '-' } • ${s.location || '-'}` : '-'}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Procurement & Phases */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow p-5">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Procurement Items</h2>
-          {procError && <div className="mb-3 text-sm text-red-600">{procError}</div>}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-gray-600">Filter:</span>
-              <select className="border text-gray-900 rounded px-2 py-1" value={procStatusFilter} onChange={(e)=>setProcStatusFilter(e.target.value as 'ALL' | ProcurementStatus)}>
-                <option value="ALL">All</option>
-                <option value="PENDING">Pending</option>
-                <option value="QUOTED">Quoted</option>
-                <option value="APPROVED">Approved</option>
-                <option value="ORDERED">Ordered</option>
-                <option value="DELIVERED">Delivered</option>
-              </select>
-            </div>
-            <button onClick={exportProcurementCSV} className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1 rounded">Export CSV</button>
-          </div>
-          <form onSubmit={addProcurement} className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Item name" value={newProc.itemName} onChange={(e) => setNewProc({ ...newProc, itemName: e.target.value })} />
-            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Quantity" type="number" min={1} value={newProc.quantity} onChange={(e) => setNewProc({ ...newProc, quantity: Number(e.target.value) })} />
-            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Unit" value={newProc.unit} onChange={(e) => setNewProc({ ...newProc, unit: e.target.value })} />
-            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Estimated Cost" value={newProc.estimatedCost} onChange={(e) => setNewProc({ ...newProc, estimatedCost: e.target.value })} />
-            <input className="border text-gray-900 rounded-md px-3 py-2 md:col-span-2" placeholder="Description (optional)" value={newProc.description} onChange={(e) => setNewProc({ ...newProc, description: e.target.value })} />
-            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors md:col-span-2">Add Item</button>
-          </form>
-          <div className="text-sm text-gray-600 mb-2">Assess recommended suppliers and costs below. You can export a CSV for the chairman.</div>
-          {procurements.length === 0 ? (
-            <div className="text-sm text-gray-500">No procurement items yet.</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="text-left text-gray-600">
-                    <th className="p-2">Item</th>
-                    <th className="p-2">Qty</th>
-                    <th className="p-2">Unit</th>
-                    <th className="p-2">Supplier</th>
-                    <th className="p-2">Estimated</th>
-                    <th className="p-2">Actual</th>
-                    <th className="p-2">Status</th>
-                    <th className="p-2">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {procurements
-                    .filter((p)=> procStatusFilter==='ALL' ? true : p.status === procStatusFilter)
-                    .map((p) => (
-                    <tr key={p.id} className="border-t">
-                      <td className="p-2">
-                        <div className="font-medium text-gray-900">{p.itemName}</div>
-                        <div className="text-xs text-gray-500">{p.description || '-'}</div>
-                      </td>
-                      <td className="p-2">{p.quantity}</td>
-                      <td className="p-2">{p.unit}</td>
-                      <td className="p-2">
-                        <input className="border rounded px-2 py-1 w-36" placeholder="Supplier"
-                          defaultValue={p.supplierId || ''}
-                          onBlur={(e) => updateProcurement(p.id, { supplierId: e.target.value })}
-                          disabled={updatingProcId === p.id}
-                        />
-                      </td>
-                      <td className="p-2">
-                        <input className="border rounded px-2 py-1 w-28" placeholder="0.00"
-                          defaultValue={p.estimatedCost || ''}
-                          onBlur={(e) => updateProcurement(p.id, { estimatedCost: e.target.value })}
-                          disabled={updatingProcId === p.id}
-                        />
-                      </td>
-                      <td className="p-2">
-                        <input className="border rounded px-2 py-1 w-28" placeholder="0.00"
-                          defaultValue={p.actualCost || ''}
-                          onBlur={(e) => updateProcurement(p.id, { actualCost: e.target.value })}
-                          disabled={updatingProcId === p.id}
-                        />
-                      </td>
-                      <td className="p-2">
-                        <select className="border rounded px-2 py-1"
-                          defaultValue={p.status}
-                          onChange={(e) => updateProcurement(p.id, { status: e.target.value as ProcurementStatus })}
-                          disabled={updatingProcId === p.id}
-                        >
-                          <option value="PENDING">PENDING</option>
-                          <option value="QUOTED">QUOTED</option>
-                          <option value="APPROVED">APPROVED</option>
-                          <option value="ORDERED">ORDERED</option>
-                          <option value="DELIVERED">DELIVERED</option>
-                        </select>
-                      </td>
-                      <td className="p-2 text-right">
-                        <button className="text-xs text-gray-600 hover:text-gray-800" onClick={() => updateProcurement(p.id, { status: 'APPROVED' })} disabled={updatingProcId === p.id}>Approve</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Supplier Comparison */}
-          <div className="mt-6">
-            <h3 className="text-md font-semibold text-gray-900 mb-2">Supplier Comparison</h3>
-            {supplierSummary.length === 0 ? (
-              <div className="text-sm text-gray-500">No supplier data available.</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-gray-600">
-                      <th className="p-2">Supplier</th>
-                      <th className="p-2">Items</th>
-                      <th className="p-2">Est. Total</th>
-                      <th className="p-2">Act. Total</th>
-                      <th className="p-2">Recommendation</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {supplierSummary.map((s, idx) => (
-                      <tr key={s.supplier} className="border-t">
-                        <td className="p-2">{s.supplier}</td>
-                        <td className="p-2">{s.items}</td>
-                        <td className="p-2">{s.estTotal.toLocaleString()}</td>
-                        <td className="p-2">{s.actTotal ? s.actTotal.toLocaleString() : '-'}</td>
-                        <td className="p-2">{idx === 0 ? <span className="px-2 py-1 text-xs rounded bg-green-100 text-green-800">Lowest Est. Total</span> : '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-5">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Project Phases</h2>
-          {phaseError && <div className="mb-3 text-sm text-red-600">{phaseError}</div>}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-gray-600">Filter:</span>
-              <select className="border rounded px-2 py-1" value={phaseStatusFilter} onChange={(e)=>setPhaseStatusFilter(e.target.value as 'ALL' | PhaseStatus)}>
-                <option value="ALL">All</option>
-                <option value="PLANNED">Planned</option>
-                <option value="IN_PROGRESS">In Progress</option>
-                <option value="COMPLETED">Completed</option>
-                <option value="DELAYED">Delayed</option>
-              </select>
-            </div>
-          </div>
-          <form onSubmit={addPhase} className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Phase name" value={newPhase.phaseName} onChange={(e) => setNewPhase({ ...newPhase, phaseName: e.target.value })} />
-            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Week number" type="number" min={1} value={newPhase.weekNumber} onChange={(e) => setNewPhase({ ...newPhase, weekNumber: Number(e.target.value) })} />
-            <select className="border text-gray-900 rounded-md px-3 py-2" value={newPhase.status} onChange={(e) => setNewPhase({ ...newPhase, status: e.target.value })}>
-              <option>PLANNED</option>
-              <option>IN_PROGRESS</option>
-              <option>COMPLETED</option>
-              <option>DELAYED</option>
-            </select>
-            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="Start date" type="date" value={newPhase.startDate} onChange={(e) => setNewPhase({ ...newPhase, startDate: e.target.value })} />
-            <input className="border text-gray-900 rounded-md px-3 py-2" placeholder="End date" type="date" value={newPhase.endDate} onChange={(e) => setNewPhase({ ...newPhase, endDate: e.target.value })} />
-            <input className="border text-gray-900 rounded-md px-3 py-2 md:col-span-2" placeholder="Tasks (comma separated)" value={newPhase.tasks} onChange={(e) => setNewPhase({ ...newPhase, tasks: e.target.value })} />
-            <input className="border text-gray-900 rounded-md px-3 py-2 md:col-span-2" placeholder="Materials (comma separated)" value={newPhase.materials} onChange={(e) => setNewPhase({ ...newPhase, materials: e.target.value })} />
-            <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors md:col-span-2">Add Phase</button>
-          </form>
-          {phases.length === 0 ? (
-            <div className="text-sm text-gray-500">No phases yet.</div>
-          ) : (
-            <div className="space-y-2">
-              {phases
-                .filter((ph)=> phaseStatusFilter==='ALL' ? true : ph.status === phaseStatusFilter)
-                .map((ph) => (
-                <div key={ph.id} className="p-3 border rounded-md">
-                  <div className="flex items-center justify-between">
-                    <div className="font-medium text-gray-900">Week {ph.weekNumber}: {ph.phaseName}</div>
-                    <select className="border text-gray-900 rounded px-2 py-1 text-xs" defaultValue={ph.status} onChange={(e)=>updatePhase(ph.id, { status: e.target.value as PhaseStatus })} disabled={updatingPhaseId===ph.id}>
-                      <option>PLANNED</option>
-                      <option>IN_PROGRESS</option>
-                      <option>COMPLETED</option>
-                      <option>DELAYED</option>
-                    </select>
-                  </div>
-                  <div className="text-xs text-gray-500 mb-2">{ph.description || '-'}</div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <div className="text-gray-600">Start</div>
-                      <input type="date" className="border text-gray-900 rounded px-2 py-1 w-full" defaultValue={ph.startDate?.substring(0,10)} onBlur={(e)=>updatePhase(ph.id, { startDate: e.target.value })} disabled={updatingPhaseId===ph.id} />
-                    </div>
-                    <div>
-                      <div className="text-gray-600">End</div>
-                      <input type="date" className="border text-gray-900 rounded px-2 py-1 w-full" defaultValue={ph.endDate?.substring(0,10)} onBlur={(e)=>updatePhase(ph.id, { endDate: e.target.value })} disabled={updatingPhaseId===ph.id} />
-                    </div>
-                    <div className="md:col-span-2">
-                      <div className="text-gray-600">Tasks (comma separated)</div>
-                      <input className="border text-gray-900 rounded px-2 py-1 w-full" defaultValue={(ph.tasks||[]).join(', ')} onBlur={(e)=>updatePhase(ph.id, { tasks: e.target.value })} disabled={updatingPhaseId===ph.id} />
-                    </div>
-                    <div className="md:col-span-2">
-                      <div className="text-gray-600">Materials (comma separated)</div>
-                      <input className="border text-gray-900 rounded px-2 py-1 w-full" defaultValue={(ph.materials||[]).join(', ')} onBlur={(e)=>updatePhase(ph.id, { materials: e.target.value })} disabled={updatingPhaseId===ph.id} />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 }
-
-
