@@ -38,10 +38,15 @@ interface ProjectAnalytics {
 }
 
 interface ProjectAnalyticsProps {
-  user: any;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+  };
 }
 
-export default function ProjectAnalytics({ user }: ProjectAnalyticsProps) {
+export default function ProjectAnalytics({}: ProjectAnalyticsProps) {
   const [analytics, setAnalytics] = useState<ProjectAnalytics[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -304,7 +309,7 @@ export default function ProjectAnalytics({ user }: ProjectAnalyticsProps) {
                   View Phase Details ({project.phases.length} phases)
                 </summary>
                 <div className="mt-3 space-y-2">
-                  {project.phases.map((phase, index) => (
+                  {project.phases.map((phase) => (
                     <div key={phase.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
                       <div className="flex items-center space-x-3">
                         <span className="font-medium text-gray-600">#{phase.weekNumber}</span>
