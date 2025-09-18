@@ -240,58 +240,60 @@ export default function InventoryPage() {
   };
 
   const fetchOrdersReceipts = async () => {
-    // Mock data - replace with actual API call
-    const mockOrders: OrderReceipt[] = [
-      {
-        id: '1',
-        type: 'ORDER',
-        title: 'Office Supplies Order #001',
-        description: 'Monthly office supplies order',
-        supplier: 'Office Depot',
-        amount: 25000,
-        currency: 'KES',
-        orderNumber: 'ORD-2024-001',
-        date: '2024-01-15',
-        status: 'PENDING',
-        documents: [
-          {
-            id: '1',
-            name: 'order-001.pdf',
-            type: 'pdf',
-            size: 256000,
-            url: '/orders/order-001.pdf',
-            uploadedAt: '2024-01-15T09:00:00Z'
-          }
-        ],
-        uploadedBy: 'Procurement Officer',
-        uploadedAt: '2024-01-15T09:00:00Z'
-      },
-      {
-        id: '2',
-        type: 'RECEIPT',
-        title: 'Equipment Purchase Receipt',
-        description: 'Receipt for new office equipment',
-        supplier: 'Tech Solutions Ltd',
-        amount: 150000,
-        currency: 'KES',
-        invoiceNumber: 'INV-2024-002',
-        date: '2024-01-14',
-        status: 'APPROVED',
-        documents: [
-          {
-            id: '2',
-            name: 'receipt-002.pdf',
-            type: 'pdf',
-            size: 128000,
-            url: '/receipts/receipt-002.pdf',
-            uploadedAt: '2024-01-14T16:30:00Z'
-          }
-        ],
-        uploadedBy: 'Finance Officer',
-        uploadedAt: '2024-01-14T16:30:00Z'
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('tms_token') : null;
+      if (!token) {
+        setOrdersReceipts([]);
+        return;
       }
-    ];
-    setOrdersReceipts(mockOrders);
+
+      const headers = { Authorization: `Bearer ${token}` } as const;
+
+      // Get projects list (RBAC on API ensures supervisors get only their assigned project)
+      const projectsRes = await fetch(getApiUrl('/api/projects'), { headers });
+      if (!projectsRes.ok) {
+        setOrdersReceipts([]);
+        return;
+      }
+      const projects: Array<{ id: string; title: string }> = await projectsRes.json();
+
+      // Fetch order templates per project and flatten
+      const perProject = await Promise.all(
+        projects.map(async (p) => {
+          const res = await fetch(getApiUrl(`/api/projects/${p.id}/order-templates`), { headers });
+          if (!res.ok) return [] as any[];
+          const templates = await res.json();
+          return templates.map((t: any) => {
+            const total = Array.isArray(t.items)
+              ? t.items.reduce((sum: number, it: any) => sum + Number(it.amount || 0), 0)
+              : 0;
+            const createdBy = t.createdByUser?.name || 'Unknown';
+            return {
+              id: t.id as string,
+              type: 'ORDER' as const,
+              title: t.title as string,
+              description: t.equipmentInstallationWorks as string,
+              supplier: undefined,
+              amount: total,
+              currency: 'KES',
+              orderNumber: t.billNumber as string,
+              invoiceNumber: undefined,
+              date: t.createdAt as string,
+              status: 'PENDING' as const,
+              documents: [] as OrderDocument[],
+              uploadedBy: createdBy,
+              uploadedAt: t.createdAt as string
+            } as OrderReceipt;
+          });
+        })
+      );
+
+      const orders = perProject.flat();
+      setOrdersReceipts(orders);
+    } catch (err) {
+      console.error('Failed to fetch orders/receipts:', err);
+      setOrdersReceipts([]);
+    }
   };
 
   // Office Documents Functions
