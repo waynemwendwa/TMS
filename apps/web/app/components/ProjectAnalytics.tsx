@@ -230,7 +230,7 @@ export default function ProjectAnalytics({ user }: ProjectAnalyticsProps) {
                   <span>Created by: {project.createdBy.name}</span>
                   <span>•</span>
                   <span>Status: {project.status}</span>
-                  {project.daysRemaining !== null && (
+                  {project.daysRemaining !== null && project.daysRemaining !== undefined && (
                     <>
                       <span>•</span>
                       <span className={project.daysRemaining < 0 ? 'text-red-600' : project.daysRemaining < 7 ? 'text-orange-600' : 'text-gray-600'}>
