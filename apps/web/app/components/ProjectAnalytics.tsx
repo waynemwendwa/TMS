@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { getApiUrl } from '../lib/config';
 
 interface ProjectAnalytics {
   id: string;
@@ -57,15 +58,17 @@ export default function ProjectAnalytics({}: ProjectAnalyticsProps) {
         const token = localStorage.getItem('tms_token');
         if (!token) return;
 
-        const res = await fetch('/api/projects/analytics', {
+        const res = await fetch(getApiUrl('/api/projects/analytics'), {
           headers: { Authorization: `Bearer ${token}` }
         });
 
         if (res.ok) {
           const data = await res.json();
+          console.log('📊 Project Analytics loaded:', data.length, 'projects');
           setAnalytics(data);
         } else {
-          setError('Failed to fetch project analytics');
+          console.error('❌ Analytics API Error:', res.status, res.statusText);
+          setError(`Failed to fetch project analytics (${res.status})`);
         }
       } catch (err) {
         setError('Error fetching project analytics');

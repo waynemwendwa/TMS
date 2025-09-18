@@ -21,11 +21,10 @@ export const API_BASE_URL = getApiBaseUrl();
 
 // Debug logging (remove in production)
 if (typeof window !== 'undefined') {
-  console.log('🔧 API Configuration Debug:');
-  console.log('NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
-  console.log('API_BASE_URL:', API_BASE_URL);
-  console.log('Window location:', window.location.hostname);
-  console.log('All env vars:', Object.keys(process.env).filter(key => key.includes('API')));
+  console.log('🔧 API Configuration:');
+  console.log('  • API Base URL:', API_BASE_URL);
+  console.log('  • Current Domain:', window.location.hostname);
+  console.log('  • Environment:', process.env.NODE_ENV || 'development');
 }
 
 // Helper function to build API URLs
@@ -34,9 +33,9 @@ export const getApiUrl = (endpoint: string) => {
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const fullUrl = `${baseUrl}${cleanEndpoint}`;
   
-  // Debug logging
-  if (typeof window !== 'undefined') {
-    console.log(`🔗 Building API URL: ${endpoint} -> ${fullUrl}`);
+  // Debug logging (only for analytics endpoint to reduce noise)
+  if (typeof window !== 'undefined' && endpoint.includes('analytics')) {
+    console.log(`📊 Analytics API Call: ${endpoint} -> ${fullUrl}`);
   }
   
   return fullUrl;
