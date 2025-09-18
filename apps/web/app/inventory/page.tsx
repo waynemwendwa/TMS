@@ -65,6 +65,8 @@ interface OrderDocument {
 
 export default function InventoryPage() {
   const [activeTab, setActiveTab] = useState<'documents' | 'equipment' | 'orders'>('documents');
+  const [ordersSubTab, setOrdersSubTab] = useState<'orders' | 'receipts'>('orders');
+  const [user, setUser] = useState<{ id: string; name: string; email: string; role: string } | null>(null);
   const [loading, setLoading] = useState(true);
   
   // Office Documents State
@@ -117,6 +119,13 @@ export default function InventoryPage() {
       // Fetch inventory data from the actual API
       const token = typeof window !== 'undefined' ? localStorage.getItem('tms_token') : null;
       if (token) {
+        // Fetch current user to apply role-based restrictions
+        const meRes = await fetch(getApiUrl('/api/auth/me'), { headers: { Authorization: `Bearer ${token}` } });
+        if (meRes.ok) {
+          const me = await meRes.json();
+          setUser(me.user || me);
+        }
+
         const response = await fetch(getApiUrl('/api/inventory'), {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -166,6 +175,14 @@ export default function InventoryPage() {
   }, []);
 
   useEffect(() => {
+    // Initialize tab from query string if present
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get('tab');
+      if (tab === 'orders') setActiveTab('orders');
+      const sub = params.get('sub');
+      if (sub === 'receipts') setOrdersSubTab('receipts');
+    }
     fetchAllData();
   }, [fetchAllData]);
 
@@ -480,6 +497,10 @@ export default function InventoryPage() {
     order.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Split orders vs receipts
+  const onlyOrders = filteredOrders.filter(o => o.type === 'ORDER');
+  const onlyReceipts = filteredOrders.filter(o => o.type !== 'ORDER');
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -498,6 +519,7 @@ export default function InventoryPage() {
       {/* Tab Navigation */}
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
+          {user?.role !== 'SITE_SUPERVISOR' && (
           <button
             onClick={() => setActiveTab('documents')}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
@@ -508,6 +530,8 @@ export default function InventoryPage() {
           >
             📄 Office Documents
           </button>
+          )}
+          {user?.role !== 'SITE_SUPERVISOR' && (
           <button
             onClick={() => setActiveTab('equipment')}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
@@ -518,6 +542,7 @@ export default function InventoryPage() {
           >
             🛠️ Tools & Equipment
           </button>
+          )}
           <button
             onClick={() => setActiveTab('orders')}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
@@ -526,7 +551,7 @@ export default function InventoryPage() {
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            📋 Orders & Receipts
+            📋 Orders{user?.role !== 'SITE_SUPERVISOR' ? ' & Receipts' : ''}
           </button>
         </nav>
       </div>
@@ -700,14 +725,32 @@ export default function InventoryPage() {
 
       {activeTab === 'orders' && (
         <div className="space-y-6">
-          {/* Orders & Receipts Section */}
+          {/* Orders Section Header with Sub-Tabs */}
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-gray-900">Orders & Receipts</h2>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">{user?.role === 'SITE_SUPERVISOR' ? 'Orders' : 'Orders & Receipts'}</h2>
+              <div className="mt-2 flex space-x-4">
+                <button
+                  onClick={() => setOrdersSubTab('orders')}
+                  className={`text-sm pb-1 border-b-2 ${ordersSubTab === 'orders' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                >
+                  Orders
+                </button>
+                {user?.role !== 'SITE_SUPERVISOR' && (
+                  <button
+                    onClick={() => setOrdersSubTab('receipts')}
+                    className={`text-sm pb-1 border-b-2 ${ordersSubTab === 'receipts' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                  >
+                    Receipts
+                  </button>
+                )}
+              </div>
+            </div>
             <button
               onClick={() => setShowOrderForm(true)}
               className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
             >
-              Add Order/Receipt
+              {user?.role === 'SITE_SUPERVISOR' ? 'Add Order' : 'Add Order/Receipt'}
             </button>
           </div>
 
@@ -722,9 +765,9 @@ export default function InventoryPage() {
             />
           </div>
 
-          {/* Orders Grid */}
+          {/* Orders/Receipts Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredOrders.map((order) => (
+            {(ordersSubTab === 'orders' ? onlyOrders : onlyReceipts).map((order) => (
               <div key={order.id} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
                 <div className="flex items-start justify-between mb-4">
                   <div>
@@ -956,25 +999,29 @@ export default function InventoryPage() {
       {/* Add Order Form */}
       {showOrderForm && (
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Add Order/Receipt</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">{user?.role === 'SITE_SUPERVISOR' ? 'Add Order' : 'Add Order/Receipt'}</h2>
           <form onSubmit={handleAddOrder} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Type *
-                </label>
-                <select
-                  value={newOrder.type}
-                  onChange={(e) => setNewOrder({...newOrder, type: e.target.value as OrderReceipt['type']})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  <option value="ORDER">Order</option>
-                  <option value="RECEIPT">Receipt</option>
-                  <option value="INVOICE">Invoice</option>
-                  <option value="QUOTE">Quote</option>
-                </select>
-              </div>
+              {user?.role !== 'SITE_SUPERVISOR' ? (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Type *
+                  </label>
+                  <select
+                    value={newOrder.type}
+                    onChange={(e) => setNewOrder({...newOrder, type: e.target.value as OrderReceipt['type']})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="ORDER">Order</option>
+                    <option value="RECEIPT">Receipt</option>
+                    <option value="INVOICE">Invoice</option>
+                    <option value="QUOTE">Quote</option>
+                  </select>
+                </div>
+              ) : (
+                <input type="hidden" value={newOrder.type} />
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Title *

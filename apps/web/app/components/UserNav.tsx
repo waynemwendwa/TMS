@@ -72,7 +72,9 @@ export default function UserNav() {
     switch (user.role) {
       case 'SITE_SUPERVISOR':
         return [
-          { href: '/projects', label: 'Projects' }
+          { href: '/projects', label: 'Projects' },
+          // Directly link to inventory orders tab for supervisors
+          { href: '/inventory?tab=orders', label: 'Orders' }
         ];
       
       case 'PROCUREMENT':
