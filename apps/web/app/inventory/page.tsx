@@ -63,6 +63,21 @@ interface OrderDocument {
   uploadedAt: string;
 }
 
+// API Types for orders derived from project order templates
+interface OrderTemplateItemAPI {
+  amount?: number | string;
+}
+
+interface OrderTemplateAPI {
+  id: string;
+  title: string;
+  equipmentInstallationWorks?: string;
+  billNumber?: string;
+  createdAt: string;
+  createdByUser?: { name?: string } | null;
+  items?: OrderTemplateItemAPI[];
+}
+
 export default function InventoryPage() {
   const [activeTab, setActiveTab] = useState<'documents' | 'equipment' | 'orders'>('documents');
   const [ordersSubTab, setOrdersSubTab] = useState<'orders' | 'receipts'>('orders');
@@ -261,29 +276,29 @@ export default function InventoryPage() {
       const perProject = await Promise.all(
         projects.map(async (p) => {
           const res = await fetch(getApiUrl(`/api/projects/${p.id}/order-templates`), { headers });
-          if (!res.ok) return [] as any[];
-          const templates = await res.json();
-          return templates.map((t: any) => {
-            const total = Array.isArray(t.items)
-              ? t.items.reduce((sum: number, it: any) => sum + Number(it.amount || 0), 0)
-              : 0;
+          if (!res.ok) return [] as OrderReceipt[];
+          const templates: OrderTemplateAPI[] = await res.json();
+          return templates.map((t) => {
+            const items = Array.isArray(t.items) ? t.items : [];
+            const total = items.reduce((sum: number, it: OrderTemplateItemAPI) => sum + Number(it.amount || 0), 0);
             const createdBy = t.createdByUser?.name || 'Unknown';
-            return {
-              id: t.id as string,
-              type: 'ORDER' as const,
-              title: t.title as string,
-              description: t.equipmentInstallationWorks as string,
+            const order: OrderReceipt = {
+              id: t.id,
+              type: 'ORDER',
+              title: t.title,
+              description: t.equipmentInstallationWorks || '',
               supplier: undefined,
               amount: total,
               currency: 'KES',
-              orderNumber: t.billNumber as string,
+              orderNumber: t.billNumber || '',
               invoiceNumber: undefined,
-              date: t.createdAt as string,
-              status: 'PENDING' as const,
-              documents: [] as OrderDocument[],
+              date: t.createdAt,
+              status: 'PENDING',
+              documents: [],
               uploadedBy: createdBy,
-              uploadedAt: t.createdAt as string
-            } as OrderReceipt;
+              uploadedAt: t.createdAt
+            };
+            return order;
           });
         })
       );
