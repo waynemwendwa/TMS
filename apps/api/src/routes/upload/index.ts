@@ -119,108 +119,23 @@ router.get('/office-documents', async (req: Request, res: Response) => {
   }
 });
 
-// Upload office documents
-router.post('/office-documents', requireAuth, (req: Request, res: Response, next: any) => {
-  uploadMemory.array('documents', 10)(req, res, (err: any) => {
-    if (err) {
-      console.error('❌ Multer error:', err);
-      return res.status(400).json({ error: err.message || 'File upload error' });
-    }
-    next();
-  });
-}, async (req: Request, res: Response) => {
+// Upload office documents - simplified version
+router.post('/office-documents', requireAuth, async (req: Request, res: Response) => {
   try {
-    console.log('📤 Upload request received');
+    console.log('📤 Upload request received - SIMPLIFIED VERSION');
     console.log('📤 Request body:', req.body);
-    console.log('📤 Files:', req.files);
-    console.log('📤 GCS enabled:', isGCSEnabled);
     console.log('📤 User:', req.user?.email);
     
-    const { category, name, description, tags } = req.body;
-    const files = req.files as Express.Multer.File[];
-    
-    if (!files || files.length === 0) {
-      console.log('❌ No files uploaded');
-      return res.status(400).json({ error: 'No files uploaded' });
-    }
-
-    if (!category || !name) {
-      console.log('❌ Missing required fields:', { category, name });
-      return res.status(400).json({ error: 'Category and name are required' });
-    }
-
-    const uploadedDocuments = [];
-    
-    for (const file of files) {
-      console.log('📁 Processing file:', file.originalname, 'Size:', file.size);
-      let storedFilePath: string;
-      let fileUrl: string;
-
-      if (isGCSEnabled && storageClient) {
-        console.log('☁️ Uploading to Google Cloud Storage');
-        // Upload to Google Cloud Storage
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const fileName = `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`;
-        const gcsPath = `uploads/documents/${fileName}`;
-        
-        const bucket = storageClient.bucket(GOOGLE_CLOUD_BUCKET_NAME!);
-        const gcsFile = bucket.file(gcsPath);
-        
-        await gcsFile.save(file.buffer, {
-          metadata: {
-            contentType: file.mimetype,
-          },
-        });
-
-        // Make the file publicly accessible
-        await gcsFile.makePublic();
-        
-        storedFilePath = gcsPath; // store GCS path in DB
-        fileUrl = `https://storage.googleapis.com/${GOOGLE_CLOUD_BUCKET_NAME}/${gcsPath}`;
-      } else {
-        console.log('💾 Saving to local storage');
-        // Fallback to local storage - save file to disk
-        const uploadDir = path.join(process.cwd(), 'uploads', 'documents');
-        if (!fs.existsSync(uploadDir)) {
-          fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const fileName = `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`;
-        const fullPath = path.join(uploadDir, fileName);
-        
-        console.log('💾 Writing file to:', fullPath);
-        // Write buffer to file
-        fs.writeFileSync(fullPath, file.buffer);
-        
-        const relativePath = path.relative(process.cwd(), fullPath);
-        storedFilePath = relativePath;
-        fileUrl = `/api/upload/view?filePath=${encodeURIComponent(storedFilePath)}`;
-        console.log('💾 File saved successfully:', relativePath);
-      }
-
-      console.log('💾 Creating database record for:', file.originalname);
-      const document = await prisma.officeDocument.create({
-        data: {
-          name: name || file.originalname,
-          description: description || '',
-          category: category as any,
-          type: path.extname(file.originalname).toLowerCase().substring(1).toUpperCase() as any,
-          size: file.size,
-          url: fileUrl,
-          filePath: storedFilePath,
-          uploadedBy: req.user!.email,
-          tags: tags ? JSON.parse(tags) : []
-        }
-      });
-      uploadedDocuments.push(document);
-      console.log('✅ Document created successfully:', document.id);
-    }
-
-    console.log('🎉 Upload completed successfully, documents:', uploadedDocuments.length);
-    res.status(201).json(uploadedDocuments);
+    // For now, just return a success response to test if the route works
+    res.json({ 
+      message: 'Upload endpoint is working', 
+      timestamp: new Date().toISOString(),
+      body: req.body,
+      user: req.user?.email
+    });
+    return;
   } catch (error) {
-    console.error('❌ Error uploading documents:', error);
+    console.error('❌ Error in simplified upload:', error);
     console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     res.status(500).json({ error: 'Failed to upload documents' });
   }
