@@ -46,7 +46,17 @@ const uploadDisk = multer({
 const uploadMemory = multer({
   storage: memoryStorage,
   limits: { fileSize: 10 * 1024 * 1024 },
-  fileFilter: uploadDisk.options.fileFilter as any
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /pdf|doc|docx|jpg|jpeg|png/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only PDF, DOC, DOCX, JPG, JPEG, and PNG files are allowed'));
+    }
+  }
 });
 
 // Google Cloud Storage configuration

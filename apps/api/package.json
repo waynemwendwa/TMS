@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@tms/db": "^0.0.1",
+    "@google-cloud/storage": "^7.7.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
