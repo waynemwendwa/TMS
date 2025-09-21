@@ -72,6 +72,13 @@ const isGCSEnabled = Boolean(
   GOOGLE_CLOUD_BUCKET_NAME
 );
 
+console.log('🔧 Google Cloud Storage Configuration:');
+console.log('  • Project ID:', GOOGLE_CLOUD_PROJECT_ID ? 'Set' : 'Missing');
+console.log('  • Private Key:', GOOGLE_CLOUD_PRIVATE_KEY ? 'Set' : 'Missing');
+console.log('  • Client Email:', GOOGLE_CLOUD_CLIENT_EMAIL ? 'Set' : 'Missing');
+console.log('  • Bucket Name:', GOOGLE_CLOUD_BUCKET_NAME ? 'Set' : 'Missing');
+console.log('  • GCS Enabled:', isGCSEnabled);
+
 const storageClient = isGCSEnabled
   ? new Storage({
       projectId: GOOGLE_CLOUD_PROJECT_ID,
@@ -82,6 +89,12 @@ const storageClient = isGCSEnabled
     })
   : null;
 
+if (isGCSEnabled) {
+  console.log('☁️ Google Cloud Storage client initialized');
+} else {
+  console.log('💾 Using local storage fallback');
+}
+
 // Test endpoint
 router.get('/test', (req: Request, res: Response) => {
   res.json({ message: 'Upload service is working', timestamp: new Date().toISOString() });
@@ -91,6 +104,7 @@ router.get('/test', (req: Request, res: Response) => {
 router.use((req: Request, res: Response, next: any) => {
   console.log('🔍 Upload route accessed:', req.method, req.path);
   console.log('🔍 Request headers:', req.headers);
+  console.log('🔍 Content-Type:', req.headers['content-type']);
   next();
 });
 
@@ -152,6 +166,21 @@ router.post('/test-multer', requireAuth, uploadMemory.single('test-file'), (req:
     message: 'Multer test working', 
     timestamp: new Date().toISOString(),
     file: req.file ? { name: req.file.originalname, size: req.file.size } : null,
+    body: req.body
+  });
+});
+
+// Test the exact same route structure as office-documents but without file processing
+router.post('/test-office-documents', requireAuth, uploadMemory.array('documents', 10), (req: Request, res: Response) => {
+  console.log('🧪 Test office documents route hit');
+  console.log('🧪 Request body:', req.body);
+  console.log('🧪 Files:', req.files);
+  console.log('🧪 Files type:', typeof req.files);
+  console.log('🧪 Files length:', req.files ? (req.files as any).length : 'undefined');
+  res.json({ 
+    message: 'Test office documents route working', 
+    timestamp: new Date().toISOString(),
+    files: req.files ? (req.files as any).length : 0,
     body: req.body
   });
 });
@@ -466,7 +495,14 @@ router.delete('/file', requireAuth, async (req: Request, res: Response) => {
 // Global error handler for upload routes
 router.use((error: any, req: Request, res: Response, next: any) => {
   console.error('❌ Upload route error:', error);
+  console.error('❌ Error stack:', error.stack);
   res.status(500).json({ error: 'Upload route error: ' + (error.message || 'Unknown error') });
+});
+
+// Catch-all for any unhandled routes
+router.use('*', (req: Request, res: Response) => {
+  console.log('🔍 Unhandled upload route:', req.method, req.originalUrl);
+  res.status(404).json({ error: 'Upload route not found' });
 });
 
 export default router;
