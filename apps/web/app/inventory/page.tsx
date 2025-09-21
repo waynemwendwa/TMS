@@ -313,9 +313,13 @@ export default function InventoryPage() {
 
   // Office Documents Functions
   const handleDocumentUpload = async (files: FileList) => {
+    console.log('📤 handleDocumentUpload called with', files.length, 'files');
+    console.log('📤 Files:', Array.from(files).map(f => ({ name: f.name, size: f.size, type: f.type })));
+    
     setUploadingFiles(true);
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('tms_token') : null;
+      console.log('📤 Token exists:', !!token);
       if (!token) {
         alert('Please log in to upload documents');
         return;
@@ -330,13 +334,25 @@ export default function InventoryPage() {
       formData.append('description', newDocument.description);
       formData.append('tags', JSON.stringify(newDocument.tags));
 
-      const response = await fetch(getApiUrl('/api/upload/office-documents'), {
+      console.log('📤 FormData prepared');
+      console.log('📤 Category:', newDocument.category);
+      console.log('📤 Name:', newDocument.name);
+      console.log('📤 Description:', newDocument.description);
+      console.log('📤 Tags:', newDocument.tags);
+
+      const apiUrl = getApiUrl('/api/upload/office-documents');
+      console.log('📤 API URL:', apiUrl);
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
         },
         body: formData,
       });
+
+      console.log('📤 Response status:', response.status);
+      console.log('📤 Response ok:', response.ok);
 
       if (response.ok) {
         const uploadedDocs = await response.json();
@@ -1161,9 +1177,21 @@ export default function InventoryPage() {
               <h3 className="text-lg font-medium text-gray-900 mb-4">Upload Office Document</h3>
               <form onSubmit={(e) => {
                 e.preventDefault();
+                console.log('📤 Form submitted');
+                console.log('📤 Document name:', newDocument.name);
+                console.log('📤 Document category:', newDocument.category);
+                
                 const fileInput = document.getElementById('document-files') as HTMLInputElement;
-                if (fileInput?.files) {
+                console.log('📤 File input:', fileInput);
+                console.log('📤 Files:', fileInput?.files);
+                console.log('📤 Files length:', fileInput?.files?.length);
+                
+                if (fileInput?.files && fileInput.files.length > 0) {
+                  console.log('📤 Calling handleDocumentUpload with', fileInput.files.length, 'files');
                   handleDocumentUpload(fileInput.files);
+                } else {
+                  console.log('❌ No files selected');
+                  alert('Please select at least one file to upload');
                 }
               }} className="space-y-4">
                 <div>
