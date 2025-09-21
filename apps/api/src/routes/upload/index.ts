@@ -82,6 +82,11 @@ const storageClient = isGCSEnabled
     })
   : null;
 
+// Test endpoint
+router.get('/test', (req: Request, res: Response) => {
+  res.json({ message: 'Upload service is working', timestamp: new Date().toISOString() });
+});
+
 // Get all office documents
 router.get('/office-documents', async (req: Request, res: Response) => {
   try {
@@ -96,12 +101,21 @@ router.get('/office-documents', async (req: Request, res: Response) => {
 });
 
 // Upload office documents
-router.post('/office-documents', requireAuth, uploadMemory.array('documents', 10), async (req: Request, res: Response) => {
+router.post('/office-documents', requireAuth, (req: Request, res: Response, next: any) => {
+  uploadMemory.array('documents', 10)(req, res, (err: any) => {
+    if (err) {
+      console.error('❌ Multer error:', err);
+      return res.status(400).json({ error: err.message || 'File upload error' });
+    }
+    next();
+  });
+}, async (req: Request, res: Response) => {
   try {
     console.log('📤 Upload request received');
     console.log('📤 Request body:', req.body);
     console.log('📤 Files:', req.files);
     console.log('📤 GCS enabled:', isGCSEnabled);
+    console.log('📤 User:', req.user?.email);
     
     const { category, name, description, tags } = req.body;
     const files = req.files as Express.Multer.File[];
