@@ -5,28 +5,39 @@ import { requireAuth } from '../middleware/auth.js';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { Storage } from '@google-cloud/storage';
 
 const router = Router();
 
 // ---- Project Documents Upload Setup ----
-const projectStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    // Place under uploads/project-documents/<projectId>
-    const projectId = (req.params as any)?.id || 'unassigned';
-    const uploadDir = path.join(process.cwd(), 'uploads', 'project-documents', projectId);
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Google Cloud Storage configuration
+const GOOGLE_CLOUD_PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT_ID;
+const GOOGLE_CLOUD_PRIVATE_KEY = process.env.GOOGLE_CLOUD_PRIVATE_KEY;
+const GOOGLE_CLOUD_CLIENT_EMAIL = process.env.GOOGLE_CLOUD_CLIENT_EMAIL;
+const GOOGLE_CLOUD_BUCKET_NAME = process.env.GOOGLE_CLOUD_BUCKET_NAME;
+
+const isGCSEnabled = Boolean(
+  GOOGLE_CLOUD_PROJECT_ID && 
+  GOOGLE_CLOUD_PRIVATE_KEY && 
+  GOOGLE_CLOUD_CLIENT_EMAIL && 
+  GOOGLE_CLOUD_BUCKET_NAME
+);
+
+const storageClient = isGCSEnabled
+  ? new Storage({
+      projectId: GOOGLE_CLOUD_PROJECT_ID,
+      credentials: {
+        private_key: GOOGLE_CLOUD_PRIVATE_KEY!.replace(/\\n/g, '\n'),
+        client_email: GOOGLE_CLOUD_CLIENT_EMAIL,
+      },
+    })
+  : null;
+
+// Use memory storage for both GCS and local fallback
+const projectMemoryStorage = multer.memoryStorage();
 
 const projectUpload = multer({
-  storage: projectStorage,
+  storage: projectMemoryStorage,
   limits: { fileSize: 20 * 1024 * 1024 }, // 20MB
   fileFilter: (req, file, cb) => {
     const allowedTypes = /pdf|doc|docx|jpg|jpeg|png/;
@@ -428,6 +439,10 @@ router.get('/:id/documents', requireAuth, async (req: Request, res: Response) =>
 // Upload project documents (preliminary or BOQ)
 router.post('/:id/documents', requireAuth, projectUpload.array('documents', 10), async (req: Request, res: Response) => {
   try {
+    console.log('📤 Project document upload request received');
+    console.log('📤 Project ID:', req.params.id);
+    console.log('📤 GCS enabled:', isGCSEnabled);
+    
     const { id } = req.params;
     if (req.user?.role === 'SITE_SUPERVISOR') {
       const assignment = await prisma.siteSupervisorAssignment.findUnique({ where: { userId: req.user.id } });
@@ -442,18 +457,66 @@ router.post('/:id/documents', requireAuth, projectUpload.array('documents', 10),
 
     const files = req.files as Express.Multer.File[] | undefined;
     if (!files || files.length === 0) {
+      console.log('❌ No files uploaded');
       return res.status(400).json({ error: 'No files uploaded' });
     }
 
     if (!documentType) {
+      console.log('❌ Missing documentType');
       return res.status(400).json({ error: 'documentType is required (preliminary|boq)' });
     }
 
     const uploaded: any[] = [];
     for (const file of files) {
-      if (!file.path) throw new Error('File path is undefined');
-      // store a relative path to be portable across environments
-      const relativePath = path.relative(process.cwd(), file.path);
+      console.log('📁 Processing project document:', file.originalname, 'Size:', file.size);
+      let storedFilePath: string;
+      let fileUrl: string;
+
+      if (isGCSEnabled && storageClient) {
+        console.log('☁️ Uploading to Google Cloud Storage');
+        // Upload to Google Cloud Storage
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const fileName = `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`;
+        const gcsPath = `project-documents/${id}/${fileName}`;
+        
+        const bucket = storageClient.bucket(GOOGLE_CLOUD_BUCKET_NAME!);
+        const gcsFile = bucket.file(gcsPath);
+        
+        await gcsFile.save(file.buffer, {
+          metadata: {
+            contentType: file.mimetype,
+          },
+        });
+
+        // Make the file publicly accessible
+        await gcsFile.makePublic();
+        
+        storedFilePath = gcsPath; // store GCS path in DB
+        fileUrl = `https://storage.googleapis.com/${GOOGLE_CLOUD_BUCKET_NAME}/${gcsPath}`;
+        console.log('☁️ File uploaded to GCS:', gcsPath);
+      } else {
+        console.log('💾 Saving to local storage');
+        // Fallback to local storage - save file to disk
+        const uploadDir = path.join(process.cwd(), 'uploads', 'project-documents', id);
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const fileName = `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`;
+        const fullPath = path.join(uploadDir, fileName);
+        
+        console.log('💾 Writing file to:', fullPath);
+        // Write buffer to file
+        fs.writeFileSync(fullPath, file.buffer);
+        
+        const relativePath = path.relative(process.cwd(), fullPath);
+        storedFilePath = relativePath;
+        fileUrl = `/api/upload/view?filePath=${encodeURIComponent(storedFilePath)}`;
+        console.log('💾 File saved successfully:', relativePath);
+      }
+
+      console.log('💾 Creating database record for:', file.originalname);
       const created = await prisma.projectDocument.create({
         data: {
           projectId: id,
@@ -462,18 +525,21 @@ router.post('/:id/documents', requireAuth, projectUpload.array('documents', 10),
           category: (category as any) || 'OTHER',
           type: path.extname(file.originalname).toLowerCase().substring(1).toUpperCase() as any,
           size: file.size,
-          url: `/api/upload/view?filePath=${encodeURIComponent(relativePath)}`,
-          filePath: relativePath,
+          url: fileUrl,
+          filePath: storedFilePath,
           uploadedBy: req.user!.id,
           documentType
         }
       });
       uploaded.push(created);
+      console.log('✅ Project document created successfully:', created.id);
     }
 
+    console.log('🎉 Project document upload completed successfully, documents:', uploaded.length);
     res.status(201).json(uploaded);
   } catch (error) {
-    console.error('Error uploading project documents:', error);
+    console.error('❌ Error uploading project documents:', error);
+    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     res.status(500).json({ error: 'Failed to upload project documents' });
   }
 });
