@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import multer from 'multer';
+import { Storage } from '@google-cloud/storage';
 import path from 'path';
 import fs from 'fs';
 import { prisma } from '@tms/db/client';
@@ -22,8 +23,10 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({
-  storage: storage,
+const memoryStorage = multer.memoryStorage();
+
+const uploadDisk = multer({
+  storage,
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
@@ -40,6 +43,35 @@ const upload = multer({
   }
 });
 
+const uploadMemory = multer({
+  storage: memoryStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: uploadDisk.options.fileFilter as any
+});
+
+// Google Cloud Storage configuration
+const GOOGLE_CLOUD_PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT_ID;
+const GOOGLE_CLOUD_PRIVATE_KEY = process.env.GOOGLE_CLOUD_PRIVATE_KEY;
+const GOOGLE_CLOUD_CLIENT_EMAIL = process.env.GOOGLE_CLOUD_CLIENT_EMAIL;
+const GOOGLE_CLOUD_BUCKET_NAME = process.env.GOOGLE_CLOUD_BUCKET_NAME;
+
+const isGCSEnabled = Boolean(
+  GOOGLE_CLOUD_PROJECT_ID && 
+  GOOGLE_CLOUD_PRIVATE_KEY && 
+  GOOGLE_CLOUD_CLIENT_EMAIL && 
+  GOOGLE_CLOUD_BUCKET_NAME
+);
+
+const storageClient = isGCSEnabled
+  ? new Storage({
+      projectId: GOOGLE_CLOUD_PROJECT_ID,
+      credentials: {
+        private_key: GOOGLE_CLOUD_PRIVATE_KEY!.replace(/\\n/g, '\n'),
+        client_email: GOOGLE_CLOUD_CLIENT_EMAIL,
+      },
+    })
+  : null;
+
 // Get all office documents
 router.get('/office-documents', async (req: Request, res: Response) => {
   try {
@@ -54,7 +86,7 @@ router.get('/office-documents', async (req: Request, res: Response) => {
 });
 
 // Upload office documents
-router.post('/office-documents', requireAuth, upload.array('documents', 10), async (req: Request, res: Response) => {
+router.post('/office-documents', requireAuth, (isGCSEnabled ? uploadMemory.array('documents', 10) : uploadDisk.array('documents', 10)), async (req: Request, res: Response) => {
   try {
     const { category, name, description, tags } = req.body;
     const files = req.files as Express.Multer.File[];
@@ -70,11 +102,39 @@ router.post('/office-documents', requireAuth, upload.array('documents', 10), asy
     const uploadedDocuments = [];
     
     for (const file of files) {
-      if (!file.path) {
-        throw new Error('File path is undefined');
+      let storedFilePath: string;
+      let fileUrl: string;
+
+      if (isGCSEnabled && storageClient) {
+        // Upload to Google Cloud Storage
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const fileName = `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`;
+        const gcsPath = `uploads/documents/${fileName}`;
+        
+        const bucket = storageClient.bucket(GOOGLE_CLOUD_BUCKET_NAME!);
+        const gcsFile = bucket.file(gcsPath);
+        
+        await gcsFile.save(file.buffer, {
+          metadata: {
+            contentType: file.mimetype,
+          },
+        });
+
+        // Make the file publicly accessible
+        await gcsFile.makePublic();
+        
+        storedFilePath = gcsPath; // store GCS path in DB
+        fileUrl = `https://storage.googleapis.com/${GOOGLE_CLOUD_BUCKET_NAME}/${gcsPath}`;
+      } else {
+        // Disk fallback
+        if (!('path' in file) || !(file as any).path) {
+          throw new Error('File path is undefined');
+        }
+        const relativePath = path.relative(process.cwd(), (file as any).path);
+        storedFilePath = relativePath;
+        fileUrl = `/api/upload/view?filePath=${encodeURIComponent(storedFilePath)}`;
       }
-      
-      const relativePath = path.relative(process.cwd(), file.path);
+
       const document = await prisma.officeDocument.create({
         data: {
           name: name || file.originalname,
@@ -82,9 +142,9 @@ router.post('/office-documents', requireAuth, upload.array('documents', 10), asy
           category: category as any,
           type: path.extname(file.originalname).toLowerCase().substring(1).toUpperCase() as any,
           size: file.size,
-          url: `/api/upload/view?filePath=${encodeURIComponent(relativePath)}`,
-          filePath: relativePath,
-          uploadedBy: req.user!.email, // Use email since name is not in JwtUserPayload
+          url: fileUrl,
+          filePath: storedFilePath,
+          uploadedBy: req.user!.email,
           tags: tags ? JSON.parse(tags) : []
         }
       });
@@ -99,7 +159,7 @@ router.post('/office-documents', requireAuth, upload.array('documents', 10), asy
 });
 
 // View file (for browser viewing)
-router.get('/view', (req: Request, res: Response) => {
+router.get('/view', async (req: Request, res: Response) => {
   try {
     const { filePath } = req.query;
     
@@ -108,6 +168,25 @@ router.get('/view', (req: Request, res: Response) => {
     }
 
     const decodedPath = decodeURIComponent(filePath);
+
+    // If Google Cloud Storage is enabled, serve from GCS
+    if (isGCSEnabled && storageClient) {
+      const bucket = storageClient.bucket(GOOGLE_CLOUD_BUCKET_NAME!);
+      const file = bucket.file(decodedPath);
+      
+      // Check if file exists
+      const [exists] = await file.exists();
+      if (!exists) {
+        return res.status(404).json({ error: 'File not found' });
+      }
+      
+      // Stream the file
+      const stream = file.createReadStream();
+      stream.pipe(res);
+      return;
+    }
+
+    // Fallback to local storage
     let absolutePath = path.isAbsolute(decodedPath) ? decodedPath : path.join(process.cwd(), decodedPath);
 
     // Fallback: map old absolute paths from previous releases to current cwd more robustly
@@ -163,7 +242,7 @@ router.get('/view', (req: Request, res: Response) => {
 });
 
 // Download file
-router.get('/download', (req: Request, res: Response) => {
+router.get('/download', async (req: Request, res: Response) => {
   try {
     const { filePath } = req.query;
     
@@ -172,6 +251,29 @@ router.get('/download', (req: Request, res: Response) => {
     }
 
     const decodedPath = decodeURIComponent(filePath);
+
+    // If Google Cloud Storage is enabled, serve from GCS
+    if (isGCSEnabled && storageClient) {
+      const bucket = storageClient.bucket(GOOGLE_CLOUD_BUCKET_NAME!);
+      const file = bucket.file(decodedPath);
+      
+      // Check if file exists
+      const [exists] = await file.exists();
+      if (!exists) {
+        return res.status(404).json({ error: 'File not found' });
+      }
+      
+      // Set download headers
+      res.setHeader('Content-Disposition', 'attachment');
+      res.setHeader('Content-Type', 'application/octet-stream');
+      
+      // Stream the file
+      const stream = file.createReadStream();
+      stream.pipe(res);
+      return;
+    }
+
+    // Fallback to local storage
     let absolutePath = path.isAbsolute(decodedPath) ? decodedPath : path.join(process.cwd(), decodedPath);
 
     if (!fs.existsSync(absolutePath)) {
