@@ -98,24 +98,33 @@ router.get('/office-documents', async (req: Request, res: Response) => {
 // Upload office documents
 router.post('/office-documents', requireAuth, uploadMemory.array('documents', 10), async (req: Request, res: Response) => {
   try {
+    console.log('📤 Upload request received');
+    console.log('📤 Request body:', req.body);
+    console.log('📤 Files:', req.files);
+    console.log('📤 GCS enabled:', isGCSEnabled);
+    
     const { category, name, description, tags } = req.body;
     const files = req.files as Express.Multer.File[];
     
     if (!files || files.length === 0) {
+      console.log('❌ No files uploaded');
       return res.status(400).json({ error: 'No files uploaded' });
     }
 
     if (!category || !name) {
+      console.log('❌ Missing required fields:', { category, name });
       return res.status(400).json({ error: 'Category and name are required' });
     }
 
     const uploadedDocuments = [];
     
     for (const file of files) {
+      console.log('📁 Processing file:', file.originalname, 'Size:', file.size);
       let storedFilePath: string;
       let fileUrl: string;
 
       if (isGCSEnabled && storageClient) {
+        console.log('☁️ Uploading to Google Cloud Storage');
         // Upload to Google Cloud Storage
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         const fileName = `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`;
@@ -136,6 +145,7 @@ router.post('/office-documents', requireAuth, uploadMemory.array('documents', 10
         storedFilePath = gcsPath; // store GCS path in DB
         fileUrl = `https://storage.googleapis.com/${GOOGLE_CLOUD_BUCKET_NAME}/${gcsPath}`;
       } else {
+        console.log('💾 Saving to local storage');
         // Fallback to local storage - save file to disk
         const uploadDir = path.join(process.cwd(), 'uploads', 'documents');
         if (!fs.existsSync(uploadDir)) {
@@ -146,14 +156,17 @@ router.post('/office-documents', requireAuth, uploadMemory.array('documents', 10
         const fileName = `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`;
         const fullPath = path.join(uploadDir, fileName);
         
+        console.log('💾 Writing file to:', fullPath);
         // Write buffer to file
         fs.writeFileSync(fullPath, file.buffer);
         
         const relativePath = path.relative(process.cwd(), fullPath);
         storedFilePath = relativePath;
         fileUrl = `/api/upload/view?filePath=${encodeURIComponent(storedFilePath)}`;
+        console.log('💾 File saved successfully:', relativePath);
       }
 
+      console.log('💾 Creating database record for:', file.originalname);
       const document = await prisma.officeDocument.create({
         data: {
           name: name || file.originalname,
@@ -168,11 +181,14 @@ router.post('/office-documents', requireAuth, uploadMemory.array('documents', 10
         }
       });
       uploadedDocuments.push(document);
+      console.log('✅ Document created successfully:', document.id);
     }
 
+    console.log('🎉 Upload completed successfully, documents:', uploadedDocuments.length);
     res.status(201).json(uploadedDocuments);
   } catch (error) {
-    console.error('Error uploading documents:', error);
+    console.error('❌ Error uploading documents:', error);
+    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     res.status(500).json({ error: 'Failed to upload documents' });
   }
 });
