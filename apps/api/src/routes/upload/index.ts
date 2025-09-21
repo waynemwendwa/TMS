@@ -143,6 +143,19 @@ router.post('/simple-test', (req: Request, res: Response) => {
   });
 });
 
+// Test multer with single file
+router.post('/test-multer', requireAuth, uploadMemory.single('test-file'), (req: Request, res: Response) => {
+  console.log('🧪 Multer test hit');
+  console.log('🧪 Request body:', req.body);
+  console.log('🧪 File:', req.file);
+  res.json({ 
+    message: 'Multer test working', 
+    timestamp: new Date().toISOString(),
+    file: req.file ? { name: req.file.originalname, size: req.file.size } : null,
+    body: req.body
+  });
+});
+
 // Get all office documents
 router.get('/office-documents', async (req: Request, res: Response) => {
   try {
@@ -169,16 +182,6 @@ router.post('/office-documents', requireAuth, uploadMemory.array('documents', 10
     console.log('📤 GCS enabled:', isGCSEnabled);
     console.log('📤 User:', req.user?.email);
     
-    // Temporary: Just return success without processing files
-    console.log('📤 Returning success without processing files');
-    return res.status(200).json({ 
-      message: 'Upload endpoint reached successfully', 
-      files: req.files ? (req.files as any).length : 0,
-      body: req.body
-    });
-    
-    // Commented out for debugging - will restore after confirming endpoint works
-    /*
     const { category, name, description, tags } = req.body;
     const files = req.files as Express.Multer.File[];
     
@@ -267,11 +270,18 @@ router.post('/office-documents', requireAuth, uploadMemory.array('documents', 10
 
     console.log('🎉 Upload completed successfully, documents:', uploadedDocuments.length);
     res.status(201).json(uploadedDocuments);
-    */
   } catch (error) {
     console.error('❌ Error uploading documents:', error);
     console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-    res.status(500).json({ error: 'Failed to upload documents' });
+    console.error('❌ Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      name: error instanceof Error ? error.name : 'Unknown',
+      cause: error instanceof Error ? error.cause : undefined
+    });
+    res.status(500).json({ 
+      error: 'Failed to upload documents',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 

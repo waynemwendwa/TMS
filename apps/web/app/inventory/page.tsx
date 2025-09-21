@@ -355,11 +355,22 @@ export default function InventoryPage() {
       console.log('📤 Response ok:', response.ok);
 
       if (response.ok) {
-        const uploadedDocs = await response.json();
-        setOfficeDocuments(prev => [...uploadedDocs, ...prev]);
-        setNewDocument({ name: '', description: '', category: 'OTHER', tags: [] });
-        setShowDocumentUpload(false);
-        alert('Documents uploaded successfully!');
+        const responseData = await response.json();
+        console.log('📤 Response data:', responseData);
+        
+        // Handle both array and single object responses
+        const uploadedDocs = Array.isArray(responseData) ? responseData : [responseData];
+        
+        // Only update state if we have actual document data (not just success message)
+        if (uploadedDocs.length > 0 && uploadedDocs[0].id) {
+          setOfficeDocuments(prev => [...uploadedDocs, ...prev]);
+          setNewDocument({ name: '', description: '', category: 'OTHER', tags: [] });
+          setShowDocumentUpload(false);
+          alert('Documents uploaded successfully!');
+        } else {
+          // This is our simplified test response
+          alert('Upload endpoint working! Files received: ' + (responseData.files || 0));
+        }
       } else {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || 'Failed to upload documents');
