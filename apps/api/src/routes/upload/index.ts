@@ -96,7 +96,7 @@ router.get('/office-documents', async (req: Request, res: Response) => {
 });
 
 // Upload office documents
-router.post('/office-documents', requireAuth, (isGCSEnabled ? uploadMemory.array('documents', 10) : uploadDisk.array('documents', 10)), async (req: Request, res: Response) => {
+router.post('/office-documents', requireAuth, uploadMemory.array('documents', 10), async (req: Request, res: Response) => {
   try {
     const { category, name, description, tags } = req.body;
     const files = req.files as Express.Multer.File[];
@@ -136,11 +136,20 @@ router.post('/office-documents', requireAuth, (isGCSEnabled ? uploadMemory.array
         storedFilePath = gcsPath; // store GCS path in DB
         fileUrl = `https://storage.googleapis.com/${GOOGLE_CLOUD_BUCKET_NAME}/${gcsPath}`;
       } else {
-        // Disk fallback
-        if (!('path' in file) || !(file as any).path) {
-          throw new Error('File path is undefined');
+        // Fallback to local storage - save file to disk
+        const uploadDir = path.join(process.cwd(), 'uploads', 'documents');
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
         }
-        const relativePath = path.relative(process.cwd(), (file as any).path);
+        
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const fileName = `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`;
+        const fullPath = path.join(uploadDir, fileName);
+        
+        // Write buffer to file
+        fs.writeFileSync(fullPath, file.buffer);
+        
+        const relativePath = path.relative(process.cwd(), fullPath);
         storedFilePath = relativePath;
         fileUrl = `/api/upload/view?filePath=${encodeURIComponent(storedFilePath)}`;
       }
