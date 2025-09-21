@@ -106,6 +106,24 @@ router.post('/office-documents-test', requireAuth, async (req: Request, res: Res
   }
 });
 
+// Test with basic multer (single file)
+router.post('/office-documents-single', requireAuth, uploadMemory.single('documents'), async (req: Request, res: Response) => {
+  try {
+    console.log('🧪 Single file upload test');
+    console.log('🧪 Request body:', req.body);
+    console.log('🧪 File:', req.file);
+    console.log('🧪 User:', req.user?.email);
+    res.json({ 
+      message: 'Single file upload test working', 
+      timestamp: new Date().toISOString(),
+      file: req.file ? { name: req.file.originalname, size: req.file.size } : null
+    });
+  } catch (error) {
+    console.error('🧪 Single file test error:', error);
+    res.status(500).json({ error: 'Single file test failed' });
+  }
+});
+
 // Get all office documents
 router.get('/office-documents', async (req: Request, res: Response) => {
   try {
@@ -119,20 +137,35 @@ router.get('/office-documents', async (req: Request, res: Response) => {
   }
 });
 
-// Upload office documents - with multer middleware
-router.post('/office-documents', requireAuth, uploadMemory.array('documents', 10), async (req: Request, res: Response) => {
+// Upload office documents - with error handling for multer
+router.post('/office-documents', requireAuth, (req: Request, res: Response, next: any) => {
+  uploadMemory.array('documents', 10)(req, res, (err: any) => {
+    if (err) {
+      console.error('❌ Multer error:', err);
+      return res.status(400).json({ error: err.message || 'File upload error' });
+    }
+    next();
+  });
+}, async (req: Request, res: Response) => {
   try {
     console.log('📤 Upload request received');
     console.log('📤 Request body:', req.body);
     console.log('📤 Files:', req.files);
+    console.log('📤 Files type:', typeof req.files);
+    console.log('📤 Files length:', req.files ? (req.files as any).length : 'undefined');
     console.log('📤 GCS enabled:', isGCSEnabled);
     console.log('📤 User:', req.user?.email);
     
     const { category, name, description, tags } = req.body;
     const files = req.files as Express.Multer.File[];
     
-    if (!files || files.length === 0) {
-      console.log('❌ No files uploaded');
+    console.log('📤 Processing files...');
+    console.log('📤 Files array:', files);
+    console.log('📤 Files is array:', Array.isArray(files));
+    
+    if (!files || !Array.isArray(files) || files.length === 0) {
+      console.log('❌ No files uploaded or files not in expected format');
+      console.log('❌ Files value:', files);
       return res.status(400).json({ error: 'No files uploaded' });
     }
 
