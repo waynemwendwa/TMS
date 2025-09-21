@@ -500,7 +500,7 @@ router.use((error: any, req: Request, res: Response, next: any) => {
 });
 
 // Catch-all for any unhandled routes
-router.use('*', (req: Request, res: Response) => {
+router.use((req: Request, res: Response) => {
   console.log('🔍 Unhandled upload route:', req.method, req.originalUrl);
   res.status(404).json({ error: 'Upload route not found' });
 });
