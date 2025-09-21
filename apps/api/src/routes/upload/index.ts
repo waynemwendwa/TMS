@@ -87,6 +87,13 @@ router.get('/test', (req: Request, res: Response) => {
   res.json({ message: 'Upload service is working', timestamp: new Date().toISOString() });
 });
 
+// Debug middleware for all upload routes
+router.use((req: Request, res: Response, next: any) => {
+  console.log('🔍 Upload route accessed:', req.method, req.path);
+  console.log('🔍 Request headers:', req.headers);
+  next();
+});
+
 // Test POST endpoint
 router.post('/test', (req: Request, res: Response) => {
   console.log('🧪 Test POST endpoint hit');
@@ -124,6 +131,18 @@ router.post('/office-documents-single', requireAuth, uploadMemory.single('docume
   }
 });
 
+// Ultra-simple upload test (no multer, no auth)
+router.post('/simple-test', (req: Request, res: Response) => {
+  console.log('🧪 Ultra-simple test hit');
+  console.log('🧪 Request body:', req.body);
+  console.log('🧪 Request headers:', req.headers);
+  res.json({ 
+    message: 'Ultra-simple test working', 
+    timestamp: new Date().toISOString(),
+    body: req.body
+  });
+});
+
 // Get all office documents
 router.get('/office-documents', async (req: Request, res: Response) => {
   try {
@@ -137,16 +156,10 @@ router.get('/office-documents', async (req: Request, res: Response) => {
   }
 });
 
-// Upload office documents - with error handling for multer
-router.post('/office-documents', requireAuth, (req: Request, res: Response, next: any) => {
-  uploadMemory.array('documents', 10)(req, res, (err: any) => {
-    if (err) {
-      console.error('❌ Multer error:', err);
-      return res.status(400).json({ error: err.message || 'File upload error' });
-    }
-    next();
-  });
-}, async (req: Request, res: Response) => {
+// Upload office documents - simplified approach
+router.post('/office-documents', requireAuth, uploadMemory.array('documents', 10), async (req: Request, res: Response) => {
+  console.log('📤 Upload request received - handler started');
+  
   try {
     console.log('📤 Upload request received');
     console.log('📤 Request body:', req.body);
@@ -156,6 +169,16 @@ router.post('/office-documents', requireAuth, (req: Request, res: Response, next
     console.log('📤 GCS enabled:', isGCSEnabled);
     console.log('📤 User:', req.user?.email);
     
+    // Temporary: Just return success without processing files
+    console.log('📤 Returning success without processing files');
+    return res.status(200).json({ 
+      message: 'Upload endpoint reached successfully', 
+      files: req.files ? (req.files as any).length : 0,
+      body: req.body
+    });
+    
+    // Commented out for debugging - will restore after confirming endpoint works
+    /*
     const { category, name, description, tags } = req.body;
     const files = req.files as Express.Multer.File[];
     
@@ -244,6 +267,7 @@ router.post('/office-documents', requireAuth, (req: Request, res: Response, next
 
     console.log('🎉 Upload completed successfully, documents:', uploadedDocuments.length);
     res.status(201).json(uploadedDocuments);
+    */
   } catch (error) {
     console.error('❌ Error uploading documents:', error);
     console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
@@ -427,6 +451,12 @@ router.delete('/file', requireAuth, async (req: Request, res: Response) => {
     console.error('Error deleting file:', error);
     res.status(500).json({ error: 'Failed to delete file' });
   }
+});
+
+// Global error handler for upload routes
+router.use((error: any, req: Request, res: Response, next: any) => {
+  console.error('❌ Upload route error:', error);
+  res.status(500).json({ error: 'Upload route error: ' + (error.message || 'Unknown error') });
 });
 
 export default router;
