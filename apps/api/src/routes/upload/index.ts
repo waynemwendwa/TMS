@@ -87,6 +87,25 @@ router.get('/test', (req: Request, res: Response) => {
   res.json({ message: 'Upload service is working', timestamp: new Date().toISOString() });
 });
 
+// Test POST endpoint
+router.post('/test', (req: Request, res: Response) => {
+  console.log('🧪 Test POST endpoint hit');
+  res.json({ message: 'Upload POST service is working', timestamp: new Date().toISOString() });
+});
+
+// Test office documents endpoint without multer
+router.post('/office-documents-test', requireAuth, async (req: Request, res: Response) => {
+  try {
+    console.log('🧪 Office documents test endpoint hit');
+    console.log('🧪 Request body:', req.body);
+    console.log('🧪 User:', req.user?.email);
+    res.json({ message: 'Office documents endpoint is working', timestamp: new Date().toISOString() });
+  } catch (error) {
+    console.error('🧪 Test endpoint error:', error);
+    res.status(500).json({ error: 'Test endpoint failed' });
+  }
+});
+
 // Get all office documents
 router.get('/office-documents', async (req: Request, res: Response) => {
   try {
