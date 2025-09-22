@@ -348,43 +348,82 @@ router.get('/download', async (req: Request, res: Response) => {
 // Delete document
 router.delete('/file', requireAuth, async (req: Request, res: Response) => {
   try {
-    const { filePath } = req.body;
-    
-    if (!filePath) {
-      return res.status(400).json({ error: 'File path is required' });
+    console.log('🗑️ Delete request received');
+    console.log('🗑️ Body:', req.body);
+    console.log('🗑️ Query:', req.query);
+
+    const id = (req.body && (req.body.id as string)) || (req.query && (req.query.id as string));
+    const incomingFilePath = (req.body && (req.body.filePath as string)) || (req.query && (req.query.filePath as string));
+
+    if (!id && !incomingFilePath) {
+      console.log('❌ Missing id or filePath');
+      return res.status(400).json({ error: 'Document id or filePath is required' });
     }
 
-    // Find and delete the document from database
-    const document = await prisma.officeDocument.findFirst({
-      where: { filePath }
-    });
+    // Find the document using id first (more reliable), then fallback to filePath
+    const document = id
+      ? await prisma.officeDocument.findUnique({ where: { id } })
+      : await prisma.officeDocument.findFirst({ where: { filePath: incomingFilePath! } });
 
     if (!document) {
+      console.log('❌ Document not found for', { id, incomingFilePath });
       return res.status(404).json({ error: 'Document not found' });
     }
 
-    // Delete from database
-    await prisma.officeDocument.delete({
-      where: { id: document.id }
-    });
+    console.log('🗑️ Deleting document:', document.id, document.filePath);
 
-    // Delete physical file
+    // Delete physical file first
     if (isGCSEnabled && storageClient) {
-      // Delete from Google Cloud Storage
+      console.log('☁️ Deleting from Google Cloud Storage');
       const bucket = storageClient.bucket(GOOGLE_CLOUD_BUCKET_NAME!);
-      const file = bucket.file(filePath);
-      await file.delete();
+      const file = bucket.file(document.filePath);
+      try {
+        await file.delete();
+        console.log('✅ GCS file deleted');
+      } catch (gcsErr) {
+        console.warn('⚠️ GCS delete warning (continuing):', gcsErr);
+      }
     } else {
-      // Delete from local storage
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
+      console.log('💾 Deleting from local storage');
+      // Resolve absolute path similar to view/download logic
+      let absolutePath = path.isAbsolute(document.filePath)
+        ? document.filePath
+        : path.join(process.cwd(), document.filePath);
+
+      if (!fs.existsSync(absolutePath)) {
+        const renderRoot = '/opt/render/project/src';
+        const apiRoot = path.join(renderRoot, 'apps', 'api');
+        if (document.filePath.startsWith(renderRoot)) {
+          const relFromApiRoot = path.relative(apiRoot, document.filePath);
+          if (!relFromApiRoot.startsWith('..')) {
+            const altPath = path.join(process.cwd(), relFromApiRoot);
+            if (fs.existsSync(altPath)) {
+              absolutePath = altPath;
+            }
+          }
+        }
+      }
+
+      if (fs.existsSync(absolutePath)) {
+        try {
+          fs.unlinkSync(absolutePath);
+          console.log('✅ Local file deleted');
+        } catch (fsErr) {
+          console.warn('⚠️ Local delete warning (continuing):', fsErr);
+        }
+      } else {
+        console.warn('⚠️ Local file not found at delete time:', absolutePath);
       }
     }
 
-    res.status(204).send();
+    // Delete from database
+    await prisma.officeDocument.delete({ where: { id: document.id } });
+    console.log('✅ Database record deleted');
+
+    return res.status(200).json({ success: true });
   } catch (error) {
-    console.error('Error deleting file:', error);
-    res.status(500).json({ error: 'Failed to delete file' });
+    console.error('❌ Error deleting file:', error);
+    return res.status(500).json({ error: 'Failed to delete document' });
   }
 });
 
