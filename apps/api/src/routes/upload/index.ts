@@ -100,13 +100,33 @@ router.get('/test', (req: Request, res: Response) => {
   res.json({ message: 'Upload service is working', timestamp: new Date().toISOString() });
 });
 
-// Debug middleware for all upload routes
-router.use((req: Request, res: Response, next: any) => {
+// Simple test endpoint
+router.get('/simple-test', (req: Request, res: Response) => {
+  res.json({ message: 'Simple test endpoint working', timestamp: new Date().toISOString() });
+});
+
+// Test multer without authentication - moved to top
+router.post('/test-multer-no-auth', debugMiddleware, uploadMemory.array('documents', 10), (req: Request, res: Response) => {
+  console.log('🧪 Test multer no auth route hit');
+  console.log('🧪 Request body:', req.body);
+  console.log('🧪 Files:', req.files);
+  console.log('🧪 Files type:', typeof req.files);
+  console.log('🧪 Files length:', req.files ? (req.files as any).length : 'undefined');
+  res.json({ 
+    message: 'Test multer no auth route working', 
+    timestamp: new Date().toISOString(),
+    files: req.files ? (req.files as any).length : 0,
+    body: req.body
+  });
+});
+
+// Debug middleware for specific routes only
+const debugMiddleware = (req: Request, res: Response, next: any) => {
   console.log('🔍 Upload route accessed:', req.method, req.path);
   console.log('🔍 Request headers:', req.headers);
   console.log('🔍 Content-Type:', req.headers['content-type']);
   next();
-});
+};
 
 // Test POST endpoint
 router.post('/test', (req: Request, res: Response) => {
@@ -185,6 +205,7 @@ router.post('/test-office-documents', requireAuth, uploadMemory.array('documents
   });
 });
 
+
 // Get all office documents
 router.get('/office-documents', async (req: Request, res: Response) => {
   try {
@@ -199,7 +220,7 @@ router.get('/office-documents', async (req: Request, res: Response) => {
 });
 
 // Upload office documents - simplified approach
-router.post('/office-documents', requireAuth, uploadMemory.array('documents', 10), async (req: Request, res: Response) => {
+router.post('/office-documents', debugMiddleware, requireAuth, uploadMemory.array('documents', 10), async (req: Request, res: Response) => {
   console.log('📤 Upload request received - handler started');
   
   try {
@@ -497,12 +518,6 @@ router.use((error: any, req: Request, res: Response, next: any) => {
   console.error('❌ Upload route error:', error);
   console.error('❌ Error stack:', error.stack);
   res.status(500).json({ error: 'Upload route error: ' + (error.message || 'Unknown error') });
-});
-
-// Catch-all for any unhandled routes
-router.use((req: Request, res: Response) => {
-  console.log('🔍 Unhandled upload route:', req.method, req.originalUrl);
-  res.status(404).json({ error: 'Upload route not found' });
 });
 
 export default router;
