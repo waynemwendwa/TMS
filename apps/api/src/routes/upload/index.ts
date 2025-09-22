@@ -49,6 +49,19 @@ router.get('/test', (req: Request, res: Response) => {
   res.json({ message: 'Upload service is working', timestamp: new Date().toISOString() });
 });
 
+// Get all office documents
+router.get('/office-documents', async (req: Request, res: Response) => {
+  try {
+    const documents = await prisma.officeDocument.findMany({
+      orderBy: { uploadedAt: 'desc' }
+    });
+    res.json(documents);
+  } catch (error) {
+    console.error('Error fetching office documents:', error);
+    res.status(500).json({ error: 'Failed to fetch office documents' });
+  }
+});
+
 // ULTRA SIMPLE UPLOAD - NO AUTH, NO MULTER, JUST WORKS
 router.post('/office-documents', (req: Request, res: Response) => {
   console.log('🚀 ULTRA SIMPLE UPLOAD HIT!');
