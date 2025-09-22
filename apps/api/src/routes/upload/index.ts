@@ -202,4 +202,190 @@ router.post('/office-documents', requireAuth, uploadMemory.array('documents', 10
   }
 });
 
+// View file (for browser viewing)
+router.get('/view', async (req: Request, res: Response) => {
+  try {
+    const { filePath } = req.query;
+    
+    if (!filePath || typeof filePath !== 'string') {
+      return res.status(400).json({ error: 'File path is required' });
+    }
+
+    const decodedPath = decodeURIComponent(filePath);
+
+    // If Google Cloud Storage is enabled, serve from GCS
+    if (isGCSEnabled && storageClient) {
+      const bucket = storageClient.bucket(GOOGLE_CLOUD_BUCKET_NAME!);
+      const file = bucket.file(decodedPath);
+      
+      // Check if file exists
+      const [exists] = await file.exists();
+      if (!exists) {
+        return res.status(404).json({ error: 'File not found' });
+      }
+      
+      // Stream the file
+      const stream = file.createReadStream();
+      stream.pipe(res);
+      return;
+    }
+
+    // Fallback to local storage
+    let absolutePath = path.isAbsolute(decodedPath) ? decodedPath : path.join(process.cwd(), decodedPath);
+
+    // Fallback: map old absolute paths from previous releases to current cwd more robustly
+    if (!fs.existsSync(absolutePath)) {
+      const renderRoot = '/opt/render/project/src';
+      const apiRoot = path.join(renderRoot, 'apps', 'api');
+      if (decodedPath.startsWith(renderRoot)) {
+        // Try computing path relative to api root then join with current cwd
+        const relFromApiRoot = path.relative(apiRoot, decodedPath);
+        if (!relFromApiRoot.startsWith('..')) {
+          const altPath = path.join(process.cwd(), relFromApiRoot);
+          if (fs.existsSync(altPath)) {
+            absolutePath = altPath;
+          }
+        }
+      }
+    }
+
+    if (!fs.existsSync(absolutePath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    const ext = path.extname(absolutePath).toLowerCase();
+    let contentType = 'application/octet-stream';
+    
+    // Set appropriate content type for viewing
+    switch (ext) {
+      case '.pdf':
+        contentType = 'application/pdf';
+        break;
+      case '.jpg':
+      case '.jpeg':
+        contentType = 'image/jpeg';
+        break;
+      case '.png':
+        contentType = 'image/png';
+        break;
+      case '.doc':
+        contentType = 'application/msword';
+        break;
+      case '.docx':
+        contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        break;
+    }
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', 'inline');
+    res.sendFile(absolutePath);
+  } catch (error) {
+    console.error('Error viewing file:', error);
+    res.status(500).json({ error: 'Failed to view file' });
+  }
+});
+
+// Download file
+router.get('/download', async (req: Request, res: Response) => {
+  try {
+    const { filePath } = req.query;
+    
+    if (!filePath || typeof filePath !== 'string') {
+      return res.status(400).json({ error: 'File path is required' });
+    }
+
+    const decodedPath = decodeURIComponent(filePath);
+
+    // If Google Cloud Storage is enabled, serve from GCS
+    if (isGCSEnabled && storageClient) {
+      const bucket = storageClient.bucket(GOOGLE_CLOUD_BUCKET_NAME!);
+      const file = bucket.file(decodedPath);
+      
+      // Check if file exists
+      const [exists] = await file.exists();
+      if (!exists) {
+        return res.status(404).json({ error: 'File not found' });
+      }
+      
+      // Set download headers
+      res.setHeader('Content-Disposition', 'attachment');
+      res.setHeader('Content-Type', 'application/octet-stream');
+      
+      // Stream the file
+      const stream = file.createReadStream();
+      stream.pipe(res);
+      return;
+    }
+
+    // Fallback to local storage
+    let absolutePath = path.isAbsolute(decodedPath) ? decodedPath : path.join(process.cwd(), decodedPath);
+
+    if (!fs.existsSync(absolutePath)) {
+      const renderRoot = '/opt/render/project/src';
+      const apiRoot = path.join(renderRoot, 'apps', 'api');
+      if (decodedPath.startsWith(renderRoot)) {
+        const relFromApiRoot = path.relative(apiRoot, decodedPath);
+        if (!relFromApiRoot.startsWith('..')) {
+          const altPath = path.join(process.cwd(), relFromApiRoot);
+          if (fs.existsSync(altPath)) {
+            absolutePath = altPath;
+          }
+        }
+      }
+    }
+
+    if (!fs.existsSync(absolutePath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    res.download(absolutePath);
+  } catch (error) {
+    console.error('Error downloading file:', error);
+    res.status(500).json({ error: 'Failed to download file' });
+  }
+});
+
+// Delete document
+router.delete('/file', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { filePath } = req.body;
+    
+    if (!filePath) {
+      return res.status(400).json({ error: 'File path is required' });
+    }
+
+    // Find and delete the document from database
+    const document = await prisma.officeDocument.findFirst({
+      where: { filePath }
+    });
+
+    if (!document) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    // Delete from database
+    await prisma.officeDocument.delete({
+      where: { id: document.id }
+    });
+
+    // Delete physical file
+    if (isGCSEnabled && storageClient) {
+      // Delete from Google Cloud Storage
+      const bucket = storageClient.bucket(GOOGLE_CLOUD_BUCKET_NAME!);
+      const file = bucket.file(filePath);
+      await file.delete();
+    } else {
+      // Delete from local storage
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting file:', error);
+    res.status(500).json({ error: 'Failed to delete file' });
+  }
+});
+
 export default router;
