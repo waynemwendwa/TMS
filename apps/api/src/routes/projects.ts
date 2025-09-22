@@ -487,9 +487,14 @@ router.post('/:id/documents', requireAuth, projectUpload.array('documents', 10),
             contentType: file.mimetype,
           },
         });
-
-        // Make the file publicly accessible
-        await gcsFile.makePublic();
+        
+        // Try to make the file public, but don't fail the whole request if it doesn't work
+        try {
+          await gcsFile.makePublic();
+          console.log('☁️ File made public on GCS');
+        } catch (publicErr) {
+          console.warn('⚠️ Could not make GCS file public (continuing):', publicErr);
+        }
         
         storedFilePath = gcsPath; // store GCS path in DB
         fileUrl = `https://storage.googleapis.com/${GOOGLE_CLOUD_BUCKET_NAME}/${gcsPath}`;
