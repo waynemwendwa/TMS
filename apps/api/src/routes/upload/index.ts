@@ -105,6 +105,14 @@ router.get('/simple-test', (req: Request, res: Response) => {
   res.json({ message: 'Simple test endpoint working', timestamp: new Date().toISOString() });
 });
 
+// Debug middleware for specific routes only
+const debugMiddleware = (req: Request, res: Response, next: any) => {
+  console.log('🔍 Upload route accessed:', req.method, req.path);
+  console.log('🔍 Request headers:', req.headers);
+  console.log('🔍 Content-Type:', req.headers['content-type']);
+  next();
+};
+
 // Test multer without authentication - moved to top
 router.post('/test-multer-no-auth', debugMiddleware, uploadMemory.array('documents', 10), (req: Request, res: Response) => {
   console.log('🧪 Test multer no auth route hit');
@@ -119,14 +127,6 @@ router.post('/test-multer-no-auth', debugMiddleware, uploadMemory.array('documen
     body: req.body
   });
 });
-
-// Debug middleware for specific routes only
-const debugMiddleware = (req: Request, res: Response, next: any) => {
-  console.log('🔍 Upload route accessed:', req.method, req.path);
-  console.log('🔍 Request headers:', req.headers);
-  console.log('🔍 Content-Type:', req.headers['content-type']);
-  next();
-};
 
 // Test POST endpoint
 router.post('/test', (req: Request, res: Response) => {
