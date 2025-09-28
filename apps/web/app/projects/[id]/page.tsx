@@ -387,6 +387,34 @@ export default function ProjectDetailsPage() {
     }
   };
 
+  // Refresh document lists to sync with database
+  const refreshDocumentLists = async () => {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('tms_token') : null;
+      if (!token) return;
+
+      // Refresh preliminary documents
+      const prelimResponse = await fetch(getApiUrl(`/api/projects/${projectId}/documents?category=PRELIMINARY`), {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (prelimResponse.ok) {
+        const prelimData = await prelimResponse.json();
+        setPrelimDocs(prelimData);
+      }
+
+      // Refresh BOQ documents
+      const boqResponse = await fetch(getApiUrl(`/api/projects/${projectId}/documents?category=BOQ_DOCUMENT`), {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (boqResponse.ok) {
+        const boqData = await boqResponse.json();
+        setBoqDocs(boqData);
+      }
+    } catch (error) {
+      console.error('Error refreshing document lists:', error);
+    }
+  };
+
   // Delete functions
   const handleDeletePrelimDocument = async (doc: ProjectDocument) => {
     try {
@@ -410,7 +438,14 @@ export default function ProjectDetailsPage() {
           setPrelimSuccess('Document deleted successfully!');
         } else {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || 'Failed to delete document');
+          if (response.status === 404) {
+            // Document not found in database, remove from frontend state
+            console.log('⚠️ Document not found in database, removing from frontend state');
+            setPrelimDocs(prev => prev.filter(d => d.id !== doc.id));
+            setPrelimSuccess('Document was already deleted or not found in database');
+          } else {
+            throw new Error(errorData.error || 'Failed to delete document');
+          }
         }
       }
     } catch (error) {
@@ -441,7 +476,14 @@ export default function ProjectDetailsPage() {
           setBoqSuccess('BOQ document deleted successfully!');
         } else {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || 'Failed to delete document');
+          if (response.status === 404) {
+            // Document not found in database, remove from frontend state
+            console.log('⚠️ BOQ document not found in database, removing from frontend state');
+            setBoqDocs(prev => prev.filter(d => d.id !== doc.id));
+            setBoqSuccess('BOQ document was already deleted or not found in database');
+          } else {
+            throw new Error(errorData.error || 'Failed to delete document');
+          }
         }
       }
     } catch (error) {
@@ -1065,7 +1107,15 @@ export default function ProjectDetailsPage() {
 
         {/* Documents List */}
         <div className="bg-white rounded-lg shadow p-5 lg:col-span-2">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Uploaded Preliminary Documents</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold text-gray-900">Uploaded Preliminary Documents</h2>
+            <button
+              onClick={refreshDocumentLists}
+              className="text-sm text-blue-600 hover:text-blue-800"
+            >
+              🔄 Refresh
+            </button>
+          </div>
           {prelimError && <div className="mb-3 text-sm text-red-600">{prelimError}</div>}
           {prelimSuccess && <div className="mb-3 text-sm text-green-700">{prelimSuccess}</div>}
           {prelimDocs.length === 0 ? (
@@ -1119,7 +1169,15 @@ export default function ProjectDetailsPage() {
           </form>
         </div>
         <div className="bg-white rounded-lg shadow p-5 lg:col-span-2">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Uploaded BOQ Documents</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold text-gray-900">Uploaded BOQ Documents</h2>
+            <button
+              onClick={refreshDocumentLists}
+              className="text-sm text-blue-600 hover:text-blue-800"
+            >
+              🔄 Refresh
+            </button>
+          </div>
           {boqDocs.length === 0 ? (
             <div className="text-sm text-gray-500">No BOQ documents uploaded.</div>
           ) : (
