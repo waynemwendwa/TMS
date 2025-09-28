@@ -129,6 +129,7 @@ export default function ProjectDetailsPage() {
   const [files, setFiles] = useState<FileList | null>(null);
   const [category, setCategory] = useState<ProjectDocument["category"]>("OTHER");
   const [justDeleted, setJustDeleted] = useState(false);
+  const [lastDeleteTime, setLastDeleteTime] = useState<number | null>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [prelimError, setPrelimError] = useState<string | null>(null);
@@ -216,9 +217,13 @@ export default function ProjectDetailsPage() {
     const token = typeof window !== "undefined" ? localStorage.getItem("tms_token") : null;
     if (!projectId || !token) return;
     
-    // Don't run if we just deleted something
-    if (justDeleted) {
-      console.log('⚠️ useEffect skipped - just deleted something');
+    // Don't run if we just deleted something (check both flag and timestamp)
+    const now = Date.now();
+    const timeSinceLastDelete = lastDeleteTime ? now - lastDeleteTime : Infinity;
+    const recentlyDeleted = justDeleted || (timeSinceLastDelete < 5000); // 5 seconds protection
+    
+    if (recentlyDeleted) {
+      console.log('⚠️ useEffect skipped - documents were recently deleted');
       return;
     }
 
@@ -455,9 +460,15 @@ export default function ProjectDetailsPage() {
       const token = typeof window !== 'undefined' ? localStorage.getItem('tms_token') : null;
       if (!token) return;
 
-      // Don't refresh if we just deleted something
-      if (justDeleted) {
-        console.log('⚠️ Skipping refresh - just deleted documents');
+      // Don't refresh if we just deleted something (check both flag and timestamp)
+      const now = Date.now();
+      const timeSinceLastDelete = lastDeleteTime ? now - lastDeleteTime : Infinity;
+      const recentlyDeleted = justDeleted || (timeSinceLastDelete < 5000); // 5 seconds protection
+      
+      if (recentlyDeleted) {
+        console.log('⚠️ Skipping refresh - documents were recently deleted');
+        setPrelimSuccess('Refresh skipped - documents were recently deleted');
+        setBoqSuccess('Refresh skipped - documents were recently deleted');
         return;
       }
 
@@ -506,6 +517,7 @@ export default function ProjectDetailsPage() {
         // Remove from frontend state immediately
         setPrelimDocs(prev => prev.filter(d => d.id !== doc.id));
         setJustDeleted(true);
+        setLastDeleteTime(Date.now());
         
         try {
           const response = await fetch(getApiUrl(`/api/projects/${projectId}/documents/${doc.id}`), {
@@ -561,6 +573,7 @@ export default function ProjectDetailsPage() {
         // Remove from frontend state immediately
         setBoqDocs(prev => prev.filter(d => d.id !== doc.id));
         setJustDeleted(true);
+        setLastDeleteTime(Date.now());
         
         try {
           const response = await fetch(getApiUrl(`/api/projects/${projectId}/documents/${doc.id}`), {
