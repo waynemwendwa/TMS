@@ -130,6 +130,7 @@ export default function ProjectDetailsPage() {
   const [category, setCategory] = useState<ProjectDocument["category"]>("OTHER");
   const [justDeleted, setJustDeleted] = useState(false);
   const [lastDeleteTime, setLastDeleteTime] = useState<number | null>(null);
+  const [deletedDocumentIds, setDeletedDocumentIds] = useState<Set<string>>(new Set());
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [prelimError, setPrelimError] = useState<string | null>(null);
@@ -316,11 +317,15 @@ export default function ProjectDetailsPage() {
           }
           if (docsRes.ok) {
             const d = await docsRes.json();
-            setPrelimDocs(d);
+            // Filter out deleted documents
+            const filteredData = d.filter((doc: any) => !deletedDocumentIds.has(doc.id));
+            setPrelimDocs(filteredData);
           }
           if (boqRes.ok) {
             const d = await boqRes.json();
-            setBoqDocs(d);
+            // Filter out deleted documents
+            const filteredData = d.filter((doc: any) => !deletedDocumentIds.has(doc.id));
+            setBoqDocs(filteredData);
           }
           if (procsRes.ok) {
             setProcurements(await procsRes.json());
@@ -481,7 +486,10 @@ export default function ProjectDetailsPage() {
       if (prelimResponse.ok) {
         const prelimData = await prelimResponse.json();
         console.log('📄 Preliminary documents refreshed:', prelimData.length);
-        setPrelimDocs(prelimData);
+        // Filter out deleted documents
+        const filteredData = prelimData.filter((doc: any) => !deletedDocumentIds.has(doc.id));
+        console.log('📄 Filtered preliminary documents:', filteredData.length);
+        setPrelimDocs(filteredData);
       }
 
       // Refresh BOQ documents
@@ -491,7 +499,10 @@ export default function ProjectDetailsPage() {
       if (boqResponse.ok) {
         const boqData = await boqResponse.json();
         console.log('📋 BOQ documents refreshed:', boqData.length);
-        setBoqDocs(boqData);
+        // Filter out deleted documents
+        const filteredData = boqData.filter((doc: any) => !deletedDocumentIds.has(doc.id));
+        console.log('📋 Filtered BOQ documents:', filteredData.length);
+        setBoqDocs(filteredData);
       }
 
       // Show success message
@@ -518,6 +529,7 @@ export default function ProjectDetailsPage() {
         setPrelimDocs(prev => prev.filter(d => d.id !== doc.id));
         setJustDeleted(true);
         setLastDeleteTime(Date.now());
+        setDeletedDocumentIds(prev => new Set([...prev, doc.id]));
         
         try {
           const response = await fetch(getApiUrl(`/api/projects/${projectId}/documents/${doc.id}`), {
@@ -563,7 +575,10 @@ export default function ProjectDetailsPage() {
             if (prelimResponse.ok) {
               const prelimData = await prelimResponse.json();
               console.log('📄 Preliminary documents after deletion:', prelimData.length);
-              setPrelimDocs(prelimData);
+              // Filter out deleted documents
+              const filteredData = prelimData.filter((doc: any) => !deletedDocumentIds.has(doc.id));
+              console.log('📄 Filtered preliminary documents:', filteredData.length);
+              setPrelimDocs(filteredData);
             }
           } catch (error) {
             console.error('Error force refreshing:', error);
@@ -591,6 +606,7 @@ export default function ProjectDetailsPage() {
         setBoqDocs(prev => prev.filter(d => d.id !== doc.id));
         setJustDeleted(true);
         setLastDeleteTime(Date.now());
+        setDeletedDocumentIds(prev => new Set([...prev, doc.id]));
         
         try {
           const response = await fetch(getApiUrl(`/api/projects/${projectId}/documents/${doc.id}`), {
@@ -636,7 +652,10 @@ export default function ProjectDetailsPage() {
             if (boqResponse.ok) {
               const boqData = await boqResponse.json();
               console.log('📋 BOQ documents after deletion:', boqData.length);
-              setBoqDocs(boqData);
+              // Filter out deleted documents
+              const filteredData = boqData.filter((doc: any) => !deletedDocumentIds.has(doc.id));
+              console.log('📋 Filtered BOQ documents:', filteredData.length);
+              setBoqDocs(filteredData);
             }
           } catch (error) {
             console.error('Error force refreshing BOQ:', error);
