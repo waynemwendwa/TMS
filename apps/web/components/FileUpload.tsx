@@ -214,7 +214,7 @@ export default function FileUpload({
                 </div>
                 <div className="flex items-center space-x-2">
                   <a
-                    href={file.url}
+                    href={`${getApiUrl('')}/api/upload/view?filePath=${encodeURIComponent(file.filePath)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:text-blue-800 text-sm"

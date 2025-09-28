@@ -847,16 +847,19 @@ export default function InventoryPage() {
                           </span>
                           <div className="flex space-x-2">
                             <button
-                              // onClick={() => window.open(doc.url, '_blank')}
-                              
+                              onClick={() => {
+                                const viewUrl = `${getApiUrl('')}/api/upload/view?filePath=${encodeURIComponent(doc.filePath)}`;
+                                window.open(viewUrl, '_blank');
+                              }}
                               className="text-blue-600 hover:text-blue-800"
                             >
                               View
                             </button>
                             <button
                               onClick={() => {
+                                const downloadUrl = `${getApiUrl('')}/api/upload/download?filePath=${encodeURIComponent(doc.filePath)}`;
                                 const link = document.createElement('a');
-                                link.href = doc.url;
+                                link.href = downloadUrl;
                                 link.download = doc.name;
                                 link.click();
                               }}
