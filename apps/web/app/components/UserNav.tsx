@@ -65,7 +65,8 @@ export default function UserNav() {
     
     const baseItems = [
       { href: '/projects', label: 'Projects' },
-      { href: '/inventory', label: 'Inventory' }
+      { href: '/inventory', label: 'Inventory' },
+      { href: '/approvals', label: 'Approvals' }
     ];
 
     // Role-specific navigation

@@ -26,6 +26,9 @@ model User {
   createdBoqTemplates BoqTemplate[]
   createdOrderTemplates OrderTemplate[]
   supervisorAssignments SiteSupervisorAssignment[]
+  requestedApprovals ApprovalRequest[] @relation("RequestedBy")
+  reviewedApprovals ApprovalRequest[] @relation("ReviewedBy")
+  notifications ApprovalNotification[]
 
   @@map("users")
 }
@@ -144,6 +147,7 @@ model Project {
   boqTemplates       BoqTemplate[]
   orderTemplates     OrderTemplate[]
   supervisorAssignments SiteSupervisorAssignment[]
+  approvalRequests   ApprovalRequest[]
   createdByUser      User @relation(fields: [createdBy], references: [id])
 
   @@map("projects")
@@ -335,6 +339,7 @@ model OrderTemplate {
   project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   createdByUser User  @relation(fields: [createdBy], references: [id])
   items       OrderTemplateItem[]
+  approvalRequests ApprovalRequest[]
 
   @@map("order_templates")
 }
@@ -354,4 +359,70 @@ model OrderTemplateItem {
   orderTemplate   OrderTemplate @relation(fields: [orderTemplateId], references: [id], onDelete: Cascade)
 
   @@map("order_template_items")
+}
+
+// Approval Workflow System
+model ApprovalRequest {
+  id          String   @id @default(cuid())
+  orderTemplateId String?
+  projectId   String
+  title       String
+  description String?
+  totalAmount Decimal? @db.Decimal(15, 2)
+  status      ApprovalStatus @default(PENDING)
+  priority   ApprovalPriority @default(MEDIUM)
+  requestedBy String
+  requestedAt DateTime @default(now())
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  comments    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  orderTemplate OrderTemplate? @relation(fields: [orderTemplateId], references: [id], onDelete: Cascade)
+  project       Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  requestedByUser User @relation("RequestedBy", fields: [requestedBy], references: [id])
+  reviewedByUser  User? @relation("ReviewedBy", fields: [reviewedBy], references: [id])
+  notifications ApprovalNotification[]
+
+  @@map("approval_requests")
+}
+
+model ApprovalNotification {
+  id          String   @id @default(cuid())
+  approvalRequestId String
+  userId      String
+  type        NotificationType
+  title       String
+  message     String
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  // Relations
+  approvalRequest ApprovalRequest @relation(fields: [approvalRequestId], references: [id], onDelete: Cascade)
+  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("approval_notifications")
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  UNDER_REVIEW
+}
+
+enum ApprovalPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum NotificationType {
+  APPROVAL_REQUEST
+  APPROVAL_APPROVED
+  APPROVAL_REJECTED
+  REMINDER
 }

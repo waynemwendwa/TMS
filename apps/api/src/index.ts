@@ -8,6 +8,7 @@ import auth from './routes/auth.js';
 import inventory from './routes/inventory.js';
 import projects from './routes/projects.js';
 import upload from './routes/upload/index.js';
+import approvals from './routes/approvals.js';
 
 const app = express();
 // CORS configuration
@@ -60,6 +61,7 @@ app.use('/api/auth', auth);
 app.use('/api/inventory', inventory);
 app.use('/api/projects', projects);
 app.use('/api/upload', upload);
+app.use('/api/approvals', approvals);
 
 const port = Number(process.env.PORT) || 4000;
 const host = '0.0.0.0';
