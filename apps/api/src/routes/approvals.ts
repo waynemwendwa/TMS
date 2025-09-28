@@ -12,9 +12,6 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
     
-    // Temporary: Return empty array until migration is applied
-    return res.json([]);
-    
     const { status, priority, projectId } = req.query;
 
     let whereClause: any = {};
@@ -35,8 +32,8 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     }
 
     // Chairman can see all requests, procurement can see their own requests
-    if (user.role !== 'CHAIRMAN') {
-      whereClause.requestedBy = user.id;
+    if (user!.role !== 'CHAIRMAN') {
+      whereClause.requestedBy = user!.id;
     }
 
     const approvalRequests = await prisma.approvalRequest.findMany({
@@ -80,7 +77,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
         },
         notifications: {
           where: {
-            userId: user.id,
+            userId: user!.id,
             isRead: false
           }
         }
@@ -154,7 +151,7 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
     }
 
     // Check if user has permission to view this request
-    if (user.role !== 'CHAIRMAN' && approvalRequest.requestedBy !== user.id) {
+    if (user!.role !== 'CHAIRMAN' && approvalRequest.requestedBy !== user!.id) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -172,12 +169,6 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
     if (!user) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
-    
-    // Temporary: Return success until migration is applied
-    return res.status(201).json({ 
-      id: 'temp-' + Date.now(),
-      message: 'Approval workflow will be available after database migration' 
-    });
     
     const { orderTemplateId, projectId, title, description, priority = 'MEDIUM' } = req.body;
 
@@ -197,7 +188,7 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
       });
 
       if (orderTemplate) {
-        totalAmount = orderTemplate.items.reduce((sum: number, item: any) => sum + Number(item.amount), 0);
+        totalAmount = orderTemplate!.items.reduce((sum: number, item: any) => sum + Number(item.amount), 0);
       }
     }
 
@@ -209,7 +200,7 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
         description,
         totalAmount,
         priority,
-        requestedBy: user.id,
+        requestedBy: user!.id,
         status: 'PENDING'
       },
       include: {
@@ -251,10 +242,10 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
       await prisma.approvalNotification.create({
         data: {
           approvalRequestId: approvalRequest.id,
-          userId: chairman.id,
+          userId: chairman!.id,
           type: 'APPROVAL_REQUEST',
           title: 'New Approval Request',
-          message: `New approval request "${title}" from ${user.email} requires your review.`
+          message: `New approval request "${title}" from ${user!.email} requires your review.`
         }
       });
     }
@@ -289,7 +280,7 @@ router.patch('/:id/status', requireAuth, async (req: Request, res: Response) => 
       where: { id },
       data: {
         status,
-        reviewedBy: user.id,
+        reviewedBy: user!.id,
         reviewedAt: new Date(),
         comments
       },
@@ -358,13 +349,10 @@ router.get('/notifications/unread', requireAuth, async (req: Request, res: Respo
     if (!user) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
-    
-    // Temporary: Return empty array until migration is applied
-    return res.json([]);
 
     const notifications = await prisma.approvalNotification.findMany({
       where: {
-        userId: user.id,
+        userId: user!.id,
         isRead: false
       },
       include: {
@@ -405,7 +393,7 @@ router.patch('/notifications/:id/read', requireAuth, async (req: Request, res: R
     const notification = await prisma.approvalNotification.update({
       where: {
         id,
-        userId: user.id
+        userId: user!.id
       },
       data: {
         isRead: true
@@ -429,7 +417,7 @@ router.patch('/notifications/read-all', requireAuth, async (req: Request, res: R
 
     await prisma.approvalNotification.updateMany({
       where: {
-        userId: user.id,
+        userId: user!.id,
         isRead: false
       },
       data: {
