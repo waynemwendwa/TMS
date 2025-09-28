@@ -29,5 +29,8 @@
     "@types/node": "^24.3.0",
     "concurrently": "^8.2.2",
     "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "pg": "^8.16.3"
   }
 }

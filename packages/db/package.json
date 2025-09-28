@@ -12,6 +12,8 @@
     "build": "prisma generate && tsc",
     "generate": "prisma generate",
     "migrate": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
+    "migrate:approval": "node migrate-approval-tables.js",
     "studio": "prisma studio",
     "postinstall": "prisma generate"
   },
