@@ -1,14 +1,17 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@tms/db';
-import { requireAuth } from '../middleware/auth';
+import { prisma } from '@tms/db/client';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // Get all approval requests (for chairman and procurement)
 router.get('/', requireAuth, async (req: Request, res: Response) => {
   try {
     const user = req.user;
+    if (!user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+    
     const { status, priority, projectId } = req.query;
 
     let whereClause: any = {};
@@ -96,6 +99,9 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const user = req.user;
+    if (!user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
 
     const approvalRequest = await prisma.approvalRequest.findUnique({
       where: { id },
@@ -160,6 +166,10 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
 router.post('/', requireAuth, async (req: Request, res: Response) => {
   try {
     const user = req.user;
+    if (!user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+    
     const { orderTemplateId, projectId, title, description, priority = 'MEDIUM' } = req.body;
 
     // Only procurement and finance_procurement can create approval requests
@@ -178,7 +188,7 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
       });
 
       if (orderTemplate) {
-        totalAmount = orderTemplate.items.reduce((sum, item) => sum + Number(item.amount), 0);
+        totalAmount = orderTemplate.items.reduce((sum: number, item: any) => sum + Number(item.amount), 0);
       }
     }
 
@@ -227,15 +237,18 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
     });
 
     // Create notification for chairman
-    await prisma.approvalNotification.create({
-      data: {
-        approvalRequestId: approvalRequest.id,
-        userId: (await prisma.user.findFirst({ where: { role: 'CHAIRMAN' } }))?.id || '',
-        type: 'APPROVAL_REQUEST',
-        title: 'New Approval Request',
-        message: `New approval request "${title}" from ${user.name} requires your review.`
-      }
-    });
+    const chairman = await prisma.user.findFirst({ where: { role: 'CHAIRMAN' } });
+    if (chairman) {
+      await prisma.approvalNotification.create({
+        data: {
+          approvalRequestId: approvalRequest.id,
+          userId: chairman.id,
+          type: 'APPROVAL_REQUEST',
+          title: 'New Approval Request',
+          message: `New approval request "${title}" from ${user.email} requires your review.`
+        }
+      });
+    }
 
     res.status(201).json(approvalRequest);
   } catch (error) {
@@ -250,6 +263,9 @@ router.patch('/:id/status', requireAuth, async (req: Request, res: Response) => 
     const { id } = req.params;
     const { status, comments } = req.body;
     const user = req.user;
+    if (!user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
 
     // Only chairman can approve/reject requests
     if (user.role !== 'CHAIRMAN') {
@@ -330,6 +346,9 @@ router.patch('/:id/status', requireAuth, async (req: Request, res: Response) => 
 router.get('/notifications/unread', requireAuth, async (req: Request, res: Response) => {
   try {
     const user = req.user;
+    if (!user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
 
     const notifications = await prisma.approvalNotification.findMany({
       where: {
@@ -367,6 +386,9 @@ router.patch('/notifications/:id/read', requireAuth, async (req: Request, res: R
   try {
     const { id } = req.params;
     const user = req.user;
+    if (!user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
 
     const notification = await prisma.approvalNotification.update({
       where: {
@@ -389,6 +411,9 @@ router.patch('/notifications/:id/read', requireAuth, async (req: Request, res: R
 router.patch('/notifications/read-all', requireAuth, async (req: Request, res: Response) => {
   try {
     const user = req.user;
+    if (!user) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
 
     await prisma.approvalNotification.updateMany({
       where: {

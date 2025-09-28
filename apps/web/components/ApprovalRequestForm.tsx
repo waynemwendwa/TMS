@@ -11,10 +11,7 @@ interface ApprovalRequestFormProps {
   onCancel: () => void;
 }
 
-interface Project {
-  id: string;
-  title: string;
-}
+// Removed unused Project interface
 
 export default function ApprovalRequestForm({ 
   projectId, 
@@ -108,7 +105,7 @@ export default function ApprovalRequestForm({
             </label>
             <select
               value={priority}
-              onChange={(e) => setPriority(e.target.value as any)}
+              onChange={(e) => setPriority(e.target.value as 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT')}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="LOW">Low</option>

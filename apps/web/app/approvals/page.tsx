@@ -62,7 +62,7 @@ interface Notification {
 
 export default function ApprovalsPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<{ role: string; id: string; name: string; email: string } | null>(null);
   const [approvalRequests, setApprovalRequests] = useState<ApprovalRequest[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,27 +72,6 @@ export default function ApprovalsPage() {
     priority: '',
     projectId: ''
   });
-
-  useEffect(() => {
-    const token = localStorage.getItem('tms_token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-
-    // Decode user from token (simplified - in production, verify the token)
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      setUser(payload);
-    } catch (error) {
-      console.error('Error decoding token:', error);
-      router.push('/login');
-      return;
-    }
-
-    fetchApprovalRequests();
-    fetchNotifications();
-  }, [router]);
 
   const fetchApprovalRequests = async () => {
     try {
@@ -123,6 +102,27 @@ export default function ApprovalsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const token = localStorage.getItem('tms_token');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    // Decode user from token (simplified - in production, verify the token)
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      setUser(payload);
+    } catch (error) {
+      console.error('Error decoding token:', error);
+      router.push('/login');
+      return;
+    }
+
+    fetchApprovalRequests();
+    fetchNotifications();
+  }, [router, filters.status, filters.priority, filters.projectId]);
 
   const fetchNotifications = async () => {
     try {

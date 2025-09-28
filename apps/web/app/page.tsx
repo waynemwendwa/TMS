@@ -194,7 +194,7 @@ export default function Home() {
 // Role-based Dashboard Router
 function RoleBasedDashboard({ user, inventoryStats, projectStats }: { user: any, inventoryStats: any, projectStats: any }) {
   if (user.role === 'SITE_SUPERVISOR') {
-    return <SiteSupervisorDashboard user={user} inventoryStats={inventoryStats} projectStats={projectStats} />;
+    return <SiteSupervisorDashboard user={user} projectStats={projectStats} />;
   }
 
   // Full access for Chairman and Chairman's PA; others fall back to full dashboard for now
@@ -202,7 +202,7 @@ function RoleBasedDashboard({ user, inventoryStats, projectStats }: { user: any,
 }
 
 // Limited dashboard for Site Supervisors (will refine based on your specs)
-function SiteSupervisorDashboard({ user, inventoryStats, projectStats }: { user: any, inventoryStats: any, projectStats: any }) {
+function SiteSupervisorDashboard({ user, projectStats }: { user: any, projectStats: any }) {
   return (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg shadow-lg p-6 text-white">
