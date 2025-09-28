@@ -392,13 +392,11 @@ export default function ProjectDetailsPage() {
       }
 
       if (confirm('Are you sure you want to delete this document?')) {
-        const response = await fetch(getApiUrl('/api/upload/file'), {
+        const response = await fetch(getApiUrl(`/api/projects/${projectId}/documents/${doc.id}`), {
           method: 'DELETE',
           headers: {
-            'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ filePath: doc.filePath }),
+          }
         });
 
         if (response.ok) {
@@ -424,13 +422,11 @@ export default function ProjectDetailsPage() {
       }
 
       if (confirm('Are you sure you want to delete this BOQ document?')) {
-        const response = await fetch(getApiUrl('/api/upload/file'), {
+        const response = await fetch(getApiUrl(`/api/projects/${projectId}/documents/${doc.id}`), {
           method: 'DELETE',
           headers: {
-            'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ filePath: doc.filePath }),
+          }
         });
 
         if (response.ok) {

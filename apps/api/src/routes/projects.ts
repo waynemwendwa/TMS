@@ -556,11 +556,57 @@ router.delete('/documents/:docId', requireAuth, async (req: Request, res: Respon
     const doc = await prisma.projectDocument.findUnique({ where: { id: docId } });
     if (!doc) return res.status(404).json({ error: 'Document not found' });
 
-    await prisma.projectDocument.delete({ where: { id: docId } });
-    if (doc.filePath && fs.existsSync(doc.filePath)) {
-      try { fs.unlinkSync(doc.filePath); } catch {}
+    console.log('🗑️ Deleting project document:', doc.id, doc.filePath);
+
+    // Delete physical file first
+    if (isGCSEnabled && storageClient && doc.filePath) {
+      console.log('☁️ Deleting from Google Cloud Storage');
+      const bucket = storageClient.bucket(GOOGLE_CLOUD_BUCKET_NAME!);
+      const file = bucket.file(doc.filePath);
+      try {
+        await file.delete();
+        console.log('✅ GCS file deleted');
+      } catch (gcsErr) {
+        console.warn('⚠️ GCS delete warning (continuing):', gcsErr);
+      }
+    } else if (doc.filePath) {
+      console.log('💾 Deleting from local storage');
+      // Resolve absolute path similar to view/download logic
+      let absolutePath = path.isAbsolute(doc.filePath)
+        ? doc.filePath
+        : path.join(process.cwd(), doc.filePath);
+
+      if (!fs.existsSync(absolutePath)) {
+        const renderRoot = '/opt/render/project/src';
+        const apiRoot = path.join(renderRoot, 'apps', 'api');
+        if (doc.filePath.startsWith(renderRoot)) {
+          const relFromApiRoot = path.relative(apiRoot, doc.filePath);
+          if (!relFromApiRoot.startsWith('..')) {
+            const altPath = path.join(process.cwd(), relFromApiRoot);
+            if (fs.existsSync(altPath)) {
+              absolutePath = altPath;
+            }
+          }
+        }
+      }
+
+      if (fs.existsSync(absolutePath)) {
+        try {
+          fs.unlinkSync(absolutePath);
+          console.log('✅ Local file deleted');
+        } catch (fsErr) {
+          console.warn('⚠️ Local delete warning (continuing):', fsErr);
+        }
+      } else {
+        console.warn('⚠️ Local file not found at delete time:', absolutePath);
+      }
     }
-    res.status(204).send();
+
+    // Delete from database
+    await prisma.projectDocument.delete({ where: { id: docId } });
+    console.log('✅ Database record deleted');
+
+    res.status(200).json({ success: true });
   } catch (error) {
     console.error('Error deleting project document:', error);
     res.status(500).json({ error: 'Failed to delete project document' });
