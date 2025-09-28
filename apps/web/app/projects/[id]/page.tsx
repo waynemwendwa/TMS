@@ -221,68 +221,121 @@ export default function ProjectDetailsPage() {
       setError(null);
       try {
         const tokenHeader = { headers: { Authorization: `Bearer ${token}` } } as const;
-        const [projRes, docsRes, boqRes, procsRes, phasesRes, boqTemplatesRes, orderTemplatesRes, userRes] = await Promise.all([
-          fetch(getApiUrl(`/api/projects/${projectId}`), {
-            ...tokenHeader
-          }),
-          fetch(getApiUrl(`/api/projects/${projectId}/documents?documentType=preliminary`), {
-            ...tokenHeader
-          }),
-          fetch(getApiUrl(`/api/projects/${projectId}/documents?documentType=boq`), {
-            ...tokenHeader
-          }),
-          fetch(getApiUrl(`/api/projects/${projectId}/procurements`), {
-            ...tokenHeader
-          }),
-          fetch(getApiUrl(`/api/projects/${projectId}/phases`), {
-            ...tokenHeader
-          }),
-          fetch(getApiUrl(`/api/projects/${projectId}/boq-templates`), {
-            ...tokenHeader
-          }),
-          fetch(getApiUrl(`/api/projects/${projectId}/order-templates`), {
-            ...tokenHeader
-          }),
-          fetch(getApiUrl(`/api/auth/me`), {
-            ...tokenHeader
-          })
-        ]);
-        if (projRes.ok) {
-          const p = await projRes.json();
-          setProject(p);
-          setStakeholders(p.stakeholders || []);
+        
+        // If we just deleted something, skip document fetching to prevent override
+        if (justDeleted) {
+          console.log('⚠️ Skipping document fetch - just deleted something');
+          // Only fetch non-document data
+          const [projRes, procsRes, phasesRes, boqTemplatesRes, orderTemplatesRes, userRes] = await Promise.all([
+            fetch(getApiUrl(`/api/projects/${projectId}`), {
+              ...tokenHeader
+            }),
+            fetch(getApiUrl(`/api/projects/${projectId}/procurements`), {
+              ...tokenHeader
+            }),
+            fetch(getApiUrl(`/api/projects/${projectId}/phases`), {
+              ...tokenHeader
+            }),
+            fetch(getApiUrl(`/api/projects/${projectId}/boq-templates`), {
+              ...tokenHeader
+            }),
+            fetch(getApiUrl(`/api/projects/${projectId}/order-templates`), {
+              ...tokenHeader
+            }),
+            fetch(getApiUrl(`/api/auth/me`), {
+              ...tokenHeader
+            })
+          ]);
+          
+          // Handle non-document responses
+          if (projRes.ok) {
+            const p = await projRes.json();
+            setProject(p);
+            setStakeholders(p.stakeholders || []);
+          }
+          if (procsRes.ok) {
+            setProcurements(await procsRes.json());
+          }
+          if (phasesRes.ok) {
+            setPhases(await phasesRes.json());
+          }
+          if (boqTemplatesRes.ok) {
+            setBoqTemplates(await boqTemplatesRes.json());
+          }
+          if (orderTemplatesRes.ok) {
+            setOrderTemplates(await orderTemplatesRes.json());
+          }
+          if (userRes.ok) {
+            setUser(await userRes.json());
+          }
+        } else {
+          // Normal fetch including documents
+          const [projRes, docsRes, boqRes, procsRes, phasesRes, boqTemplatesRes, orderTemplatesRes, userRes] = await Promise.all([
+            fetch(getApiUrl(`/api/projects/${projectId}`), {
+              ...tokenHeader
+            }),
+            fetch(getApiUrl(`/api/projects/${projectId}/documents?documentType=preliminary`), {
+              ...tokenHeader
+            }),
+            fetch(getApiUrl(`/api/projects/${projectId}/documents?documentType=boq`), {
+              ...tokenHeader
+            }),
+            fetch(getApiUrl(`/api/projects/${projectId}/procurements`), {
+              ...tokenHeader
+            }),
+            fetch(getApiUrl(`/api/projects/${projectId}/phases`), {
+              ...tokenHeader
+            }),
+            fetch(getApiUrl(`/api/projects/${projectId}/boq-templates`), {
+              ...tokenHeader
+            }),
+            fetch(getApiUrl(`/api/projects/${projectId}/order-templates`), {
+              ...tokenHeader
+            }),
+            fetch(getApiUrl(`/api/auth/me`), {
+              ...tokenHeader
+            })
+          ]);
+          
+          // Handle all responses including documents
+          if (projRes.ok) {
+            const p = await projRes.json();
+            setProject(p);
+            setStakeholders(p.stakeholders || []);
+          }
+          if (docsRes.ok) {
+            const d = await docsRes.json();
+            setPrelimDocs(d);
+          }
+          if (boqRes.ok) {
+            const d = await boqRes.json();
+            setBoqDocs(d);
+          }
+          if (procsRes.ok) {
+            setProcurements(await procsRes.json());
+          }
+          if (phasesRes.ok) {
+            setPhases(await phasesRes.json());
+          }
+          if (boqTemplatesRes.ok) {
+            setBoqTemplates(await boqTemplatesRes.json());
+          }
+          if (orderTemplatesRes.ok) {
+            setOrderTemplates(await orderTemplatesRes.json());
+          }
+          if (userRes.ok) {
+            setUser(await userRes.json());
+          }
         }
-        if (docsRes.ok) {
-          const d = await docsRes.json();
-          setPrelimDocs(d);
-        }
-        if (boqRes.ok) {
-          const d = await boqRes.json();
-          setBoqDocs(d);
-        }
-        if (procsRes.ok) {
-          setProcurements(await procsRes.json());
-        }
-        if (phasesRes.ok) {
-          setPhases(await phasesRes.json());
-        }
-        if (boqTemplatesRes.ok) {
-          setBoqTemplates(await boqTemplatesRes.json());
-        }
-        if (orderTemplatesRes.ok) {
-          setOrderTemplates(await orderTemplatesRes.json());
-        }
-        if (userRes.ok) {
-          setUser(await userRes.json());
-        }
-      } catch {
+      } catch (err) {
+        console.error("Error loading project:", err);
         setError("Failed to load project");
       } finally {
         setLoading(false);
       }
     }
     load();
-  }, [projectId]);
+  }, [projectId, justDeleted]);
 
   const onUpload = async (e: React.FormEvent) => {
     e.preventDefault();
