@@ -436,6 +436,10 @@ export default function ProjectDetailsPage() {
 
       if (confirm('Are you sure you want to delete this document?')) {
         console.log('🗑️ Deleting document:', doc.id, doc.name);
+        
+        // Remove from frontend state immediately
+        setPrelimDocs(prev => prev.filter(d => d.id !== doc.id));
+        
         const response = await fetch(getApiUrl(`/api/projects/${projectId}/documents/${doc.id}`), {
           method: 'DELETE',
           headers: {
@@ -444,16 +448,16 @@ export default function ProjectDetailsPage() {
         });
 
         if (response.ok) {
-          setPrelimDocs(prev => prev.filter(d => d.id !== doc.id));
           setPrelimSuccess('Document deleted successfully!');
         } else {
           const errorData = await response.json().catch(() => ({}));
           if (response.status === 404) {
-            // Document not found in database, remove from frontend state
-            console.log('⚠️ Document not found in database, removing from frontend state');
-            setPrelimDocs(prev => prev.filter(d => d.id !== doc.id));
+            // Document not found in database, but already removed from frontend
+            console.log('⚠️ Document not found in database, but removed from frontend');
             setPrelimSuccess('Document was already deleted or not found in database');
           } else {
+            // If other error, add the document back to frontend
+            setPrelimDocs(prev => [...prev, doc]);
             throw new Error(errorData.error || 'Failed to delete document');
           }
         }
@@ -474,6 +478,10 @@ export default function ProjectDetailsPage() {
 
       if (confirm('Are you sure you want to delete this BOQ document?')) {
         console.log('🗑️ Deleting BOQ document:', doc.id, doc.name);
+        
+        // Remove from frontend state immediately
+        setBoqDocs(prev => prev.filter(d => d.id !== doc.id));
+        
         const response = await fetch(getApiUrl(`/api/projects/${projectId}/documents/${doc.id}`), {
           method: 'DELETE',
           headers: {
@@ -482,16 +490,16 @@ export default function ProjectDetailsPage() {
         });
 
         if (response.ok) {
-          setBoqDocs(prev => prev.filter(d => d.id !== doc.id));
           setBoqSuccess('BOQ document deleted successfully!');
         } else {
           const errorData = await response.json().catch(() => ({}));
           if (response.status === 404) {
-            // Document not found in database, remove from frontend state
-            console.log('⚠️ BOQ document not found in database, removing from frontend state');
-            setBoqDocs(prev => prev.filter(d => d.id !== doc.id));
+            // Document not found in database, but already removed from frontend
+            console.log('⚠️ BOQ document not found in database, but removed from frontend');
             setBoqSuccess('BOQ document was already deleted or not found in database');
           } else {
+            // If other error, add the document back to frontend
+            setBoqDocs(prev => [...prev, doc]);
             throw new Error(errorData.error || 'Failed to delete document');
           }
         }
