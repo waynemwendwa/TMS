@@ -850,7 +850,7 @@ export default function InventoryPage() {
                             <button
                               onClick={() => {
                                 const filePath = doc.filePath || doc.url;
-                                const viewUrl = `${getApiUrl('')}/api/upload/view?filePath=${encodeURIComponent(filePath)}`;
+                                const viewUrl = `${getApiUrl('/api/upload/view')}?filePath=${encodeURIComponent(filePath)}`;
                                 window.open(viewUrl, '_blank');
                               }}
                               className="text-blue-600 hover:text-blue-800"
@@ -860,7 +860,7 @@ export default function InventoryPage() {
                             <button
                               onClick={() => {
                                 const filePath = doc.filePath || doc.url;
-                                const downloadUrl = `${getApiUrl('')}/api/upload/download?filePath=${encodeURIComponent(filePath)}`;
+                                const downloadUrl = `${getApiUrl('/api/upload/download')}?filePath=${encodeURIComponent(filePath)}`;
                                 const link = document.createElement('a');
                                 link.href = downloadUrl;
                                 link.download = doc.name;

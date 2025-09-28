@@ -40,11 +40,11 @@ const projectUpload = multer({
   storage: projectMemoryStorage,
   limits: { fileSize: 20 * 1024 * 1024 }, // 20MB
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /pdf|doc|docx|jpg|jpeg|png/;
+    const allowedTypes = /pdf|doc|docx|jpg|jpeg|png|xls|xlsx/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
     if (mimetype && extname) return cb(null, true);
-    cb(new Error('Only PDF, DOC, DOCX, JPG, JPEG, and PNG files are allowed'));
+    cb(new Error('Only PDF, DOC, DOCX, JPG, JPEG, PNG, XLS, and XLSX files are allowed'));
   }
 });
 

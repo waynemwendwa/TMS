@@ -15,14 +15,14 @@ const uploadMemory = multer({
   storage: memoryStorage,
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /pdf|doc|docx|jpg|jpeg|png/;
+    const allowedTypes = /pdf|doc|docx|jpg|jpeg|png|xls|xlsx/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
     
     if (mimetype && extname) {
       return cb(null, true);
     } else {
-      cb(new Error('Only PDF, DOC, DOCX, JPG, JPEG, and PNG files are allowed'));
+      cb(new Error('Only PDF, DOC, DOCX, JPG, JPEG, PNG, XLS, and XLSX files are allowed'));
     }
   }
 });
@@ -273,6 +273,12 @@ router.get('/view', async (req: Request, res: Response) => {
         break;
       case '.docx':
         contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        break;
+      case '.xls':
+        contentType = 'application/vnd.ms-excel';
+        break;
+      case '.xlsx':
+        contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
         break;
     }
 
