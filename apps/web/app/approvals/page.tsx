@@ -122,7 +122,7 @@ export default function ApprovalsPage() {
 
     fetchApprovalRequests();
     fetchNotifications();
-  }, [router, filters.status, filters.priority, filters.projectId]);
+  }, [router, filters.status, filters.priority, filters.projectId, fetchApprovalRequests]);
 
   const fetchNotifications = async () => {
     try {

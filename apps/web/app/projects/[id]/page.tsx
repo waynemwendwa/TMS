@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { getApiUrl } from "../../../lib/config";
-import * as XLSX from 'xlsx';
 import ApprovalRequestForm from '../../../components/ApprovalRequestForm';
 
 type Project = {
@@ -283,19 +282,19 @@ export default function ProjectDetailsPage() {
         } else {
           // Normal fetch including documents
           const [projRes, docsRes, boqRes, procsRes, phasesRes, boqTemplatesRes, orderTemplatesRes, userRes] = await Promise.all([
-            fetch(getApiUrl(`/api/projects/${projectId}`), {
-              ...tokenHeader
-            }),
-            fetch(getApiUrl(`/api/projects/${projectId}/documents?documentType=preliminary`), {
-              ...tokenHeader
-            }),
-            fetch(getApiUrl(`/api/projects/${projectId}/documents?documentType=boq`), {
-              ...tokenHeader
-            }),
-            fetch(getApiUrl(`/api/projects/${projectId}/procurements`), {
-              ...tokenHeader
-            }),
-            fetch(getApiUrl(`/api/projects/${projectId}/phases`), {
+          fetch(getApiUrl(`/api/projects/${projectId}`), {
+            ...tokenHeader
+          }),
+          fetch(getApiUrl(`/api/projects/${projectId}/documents?documentType=preliminary`), {
+            ...tokenHeader
+          }),
+          fetch(getApiUrl(`/api/projects/${projectId}/documents?documentType=boq`), {
+            ...tokenHeader
+          }),
+          fetch(getApiUrl(`/api/projects/${projectId}/procurements`), {
+            ...tokenHeader
+          }),
+          fetch(getApiUrl(`/api/projects/${projectId}/phases`), {
               ...tokenHeader
             }),
             fetch(getApiUrl(`/api/projects/${projectId}/boq-templates`), {
@@ -305,34 +304,34 @@ export default function ProjectDetailsPage() {
               ...tokenHeader
             }),
             fetch(getApiUrl(`/api/auth/me`), {
-              ...tokenHeader
-            })
-          ]);
+            ...tokenHeader
+          })
+        ]);
           
           // Handle all responses including documents
-          if (projRes.ok) {
-            const p = await projRes.json();
-            setProject(p);
-            setStakeholders(p.stakeholders || []);
-          }
-          if (docsRes.ok) {
-            const d = await docsRes.json();
+        if (projRes.ok) {
+          const p = await projRes.json();
+          setProject(p);
+          setStakeholders(p.stakeholders || []);
+        }
+        if (docsRes.ok) {
+          const d = await docsRes.json();
             // Filter out deleted documents
-            const filteredData = d.filter((doc: any) => !deletedDocumentIds.has(doc.id));
+            const filteredData = d.filter((doc: ProjectDocument) => !deletedDocumentIds.has(doc.id));
             setPrelimDocs(filteredData);
-          }
-          if (boqRes.ok) {
-            const d = await boqRes.json();
+        }
+        if (boqRes.ok) {
+          const d = await boqRes.json();
             // Filter out deleted documents
-            const filteredData = d.filter((doc: any) => !deletedDocumentIds.has(doc.id));
+            const filteredData = d.filter((doc: ProjectDocument) => !deletedDocumentIds.has(doc.id));
             setBoqDocs(filteredData);
-          }
-          if (procsRes.ok) {
-            setProcurements(await procsRes.json());
-          }
-          if (phasesRes.ok) {
-            setPhases(await phasesRes.json());
-          }
+        }
+        if (procsRes.ok) {
+          setProcurements(await procsRes.json());
+        }
+        if (phasesRes.ok) {
+          setPhases(await phasesRes.json());
+        }
           if (boqTemplatesRes.ok) {
             setBoqTemplates(await boqTemplatesRes.json());
           }
@@ -351,7 +350,7 @@ export default function ProjectDetailsPage() {
       }
     }
     load();
-  }, [projectId]);
+  }, [projectId, deletedDocumentIds, justDeleted, lastDeleteTime]);
 
   const onUpload = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -487,7 +486,7 @@ export default function ProjectDetailsPage() {
         const prelimData = await prelimResponse.json();
         console.log('📄 Preliminary documents refreshed:', prelimData.length);
         // Filter out deleted documents
-        const filteredData = prelimData.filter((doc: any) => !deletedDocumentIds.has(doc.id));
+        const filteredData = prelimData.filter((doc: ProjectDocument) => !deletedDocumentIds.has(doc.id));
         console.log('📄 Filtered preliminary documents:', filteredData.length);
         setPrelimDocs(filteredData);
       }
@@ -500,7 +499,7 @@ export default function ProjectDetailsPage() {
         const boqData = await boqResponse.json();
         console.log('📋 BOQ documents refreshed:', boqData.length);
         // Filter out deleted documents
-        const filteredData = boqData.filter((doc: any) => !deletedDocumentIds.has(doc.id));
+        const filteredData = boqData.filter((doc: ProjectDocument) => !deletedDocumentIds.has(doc.id));
         console.log('📋 Filtered BOQ documents:', filteredData.length);
         setBoqDocs(filteredData);
       }
@@ -557,7 +556,7 @@ export default function ProjectDetailsPage() {
               throw new Error(errorData.error || 'Failed to delete document');
             }
           }
-        } catch (fetchError) {
+        } catch {
           // If fetch fails completely, still keep document removed from frontend
           console.log('⚠️ Fetch failed, but keeping document removed from frontend');
           setPrelimSuccess('Document removed from view (deletion may have succeeded)');
@@ -576,7 +575,7 @@ export default function ProjectDetailsPage() {
               const prelimData = await prelimResponse.json();
               console.log('📄 Preliminary documents after deletion:', prelimData.length);
               // Filter out deleted documents
-              const filteredData = prelimData.filter((doc: any) => !deletedDocumentIds.has(doc.id));
+              const filteredData = prelimData.filter((doc: ProjectDocument) => !deletedDocumentIds.has(doc.id));
               console.log('📄 Filtered preliminary documents:', filteredData.length);
               setPrelimDocs(filteredData);
             }
@@ -634,7 +633,7 @@ export default function ProjectDetailsPage() {
               throw new Error(errorData.error || 'Failed to delete document');
             }
           }
-        } catch (fetchError) {
+        } catch {
           // If fetch fails completely, still keep document removed from frontend
           console.log('⚠️ Fetch failed, but keeping BOQ document removed from frontend');
           setBoqSuccess('BOQ document removed from view (deletion may have succeeded)');
@@ -653,7 +652,7 @@ export default function ProjectDetailsPage() {
               const boqData = await boqResponse.json();
               console.log('📋 BOQ documents after deletion:', boqData.length);
               // Filter out deleted documents
-              const filteredData = boqData.filter((doc: any) => !deletedDocumentIds.has(doc.id));
+              const filteredData = boqData.filter((doc: ProjectDocument) => !deletedDocumentIds.has(doc.id));
               console.log('📋 Filtered BOQ documents:', filteredData.length);
               setBoqDocs(filteredData);
             }
