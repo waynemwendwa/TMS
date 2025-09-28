@@ -552,6 +552,23 @@ export default function ProjectDetailsPage() {
           // Reset flag after 3 seconds
           setTimeout(() => setJustDeleted(false), 3000);
         }
+        
+        // Force a refresh after deletion to sync with database
+        setTimeout(async () => {
+          try {
+            console.log('🔄 Force refreshing after deletion...');
+            const prelimResponse = await fetch(getApiUrl(`/api/projects/${projectId}/documents?documentType=preliminary`), {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (prelimResponse.ok) {
+              const prelimData = await prelimResponse.json();
+              console.log('📄 Preliminary documents after deletion:', prelimData.length);
+              setPrelimDocs(prelimData);
+            }
+          } catch (error) {
+            console.error('Error force refreshing:', error);
+          }
+        }, 1000);
       }
     } catch (error) {
       console.error('Error deleting document:', error);
@@ -608,6 +625,23 @@ export default function ProjectDetailsPage() {
           // Reset flag after 3 seconds
           setTimeout(() => setJustDeleted(false), 3000);
         }
+        
+        // Force a refresh after deletion to sync with database
+        setTimeout(async () => {
+          try {
+            console.log('🔄 Force refreshing BOQ after deletion...');
+            const boqResponse = await fetch(getApiUrl(`/api/projects/${projectId}/documents?documentType=boq`), {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (boqResponse.ok) {
+              const boqData = await boqResponse.json();
+              console.log('📋 BOQ documents after deletion:', boqData.length);
+              setBoqDocs(boqData);
+            }
+          } catch (error) {
+            console.error('Error force refreshing BOQ:', error);
+          }
+        }, 1000);
       }
     } catch (error) {
       console.error('Error deleting BOQ document:', error);
