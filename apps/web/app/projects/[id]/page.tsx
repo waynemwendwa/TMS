@@ -128,6 +128,7 @@ export default function ProjectDetailsPage() {
   const [uploading, setUploading] = useState(false);
   const [files, setFiles] = useState<FileList | null>(null);
   const [category, setCategory] = useState<ProjectDocument["category"]>("OTHER");
+  const [justDeleted, setJustDeleted] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [prelimError, setPrelimError] = useState<string | null>(null);
@@ -395,6 +396,13 @@ export default function ProjectDetailsPage() {
       const token = typeof window !== 'undefined' ? localStorage.getItem('tms_token') : null;
       if (!token) return;
 
+      // Don't refresh if we just deleted something
+      if (justDeleted) {
+        console.log('⚠️ Skipping refresh - just deleted documents');
+        setJustDeleted(false);
+        return;
+      }
+
       console.log('🔄 Refreshing document lists...');
 
       // Refresh preliminary documents
@@ -439,6 +447,7 @@ export default function ProjectDetailsPage() {
         
         // Remove from frontend state immediately
         setPrelimDocs(prev => prev.filter(d => d.id !== doc.id));
+        setJustDeleted(true);
         
         const response = await fetch(getApiUrl(`/api/projects/${projectId}/documents/${doc.id}`), {
           method: 'DELETE',
@@ -449,12 +458,16 @@ export default function ProjectDetailsPage() {
 
         if (response.ok) {
           setPrelimSuccess('Document deleted successfully!');
+          // Reset flag after 3 seconds
+          setTimeout(() => setJustDeleted(false), 3000);
         } else {
           const errorData = await response.json().catch(() => ({}));
           if (response.status === 404) {
             // Document not found in database, but already removed from frontend
             console.log('⚠️ Document not found in database, but removed from frontend');
             setPrelimSuccess('Document was already deleted or not found in database');
+            // Reset flag after 3 seconds
+            setTimeout(() => setJustDeleted(false), 3000);
           } else {
             // If other error, add the document back to frontend
             setPrelimDocs(prev => [...prev, doc]);
@@ -481,6 +494,7 @@ export default function ProjectDetailsPage() {
         
         // Remove from frontend state immediately
         setBoqDocs(prev => prev.filter(d => d.id !== doc.id));
+        setJustDeleted(true);
         
         const response = await fetch(getApiUrl(`/api/projects/${projectId}/documents/${doc.id}`), {
           method: 'DELETE',
@@ -491,12 +505,16 @@ export default function ProjectDetailsPage() {
 
         if (response.ok) {
           setBoqSuccess('BOQ document deleted successfully!');
+          // Reset flag after 3 seconds
+          setTimeout(() => setJustDeleted(false), 3000);
         } else {
           const errorData = await response.json().catch(() => ({}));
           if (response.status === 404) {
             // Document not found in database, but already removed from frontend
             console.log('⚠️ BOQ document not found in database, but removed from frontend');
             setBoqSuccess('BOQ document was already deleted or not found in database');
+            // Reset flag after 3 seconds
+            setTimeout(() => setJustDeleted(false), 3000);
           } else {
             // If other error, add the document back to frontend
             setBoqDocs(prev => [...prev, doc]);
