@@ -215,6 +215,12 @@ export default function ProjectDetailsPage() {
   useEffect(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("tms_token") : null;
     if (!projectId || !token) return;
+    
+    // Don't run if we just deleted something
+    if (justDeleted) {
+      console.log('⚠️ useEffect skipped - just deleted something');
+      return;
+    }
 
     async function load() {
       setLoading(true);
@@ -335,7 +341,7 @@ export default function ProjectDetailsPage() {
       }
     }
     load();
-  }, [projectId, justDeleted]);
+  }, [projectId]);
 
   const onUpload = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -452,7 +458,6 @@ export default function ProjectDetailsPage() {
       // Don't refresh if we just deleted something
       if (justDeleted) {
         console.log('⚠️ Skipping refresh - just deleted documents');
-        setJustDeleted(false);
         return;
       }
 
