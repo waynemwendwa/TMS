@@ -397,6 +397,7 @@ export default function ProjectDetailsPage() {
       }
 
       if (confirm('Are you sure you want to delete this document?')) {
+        console.log('🗑️ Deleting document:', doc.id, doc.name);
         const response = await fetch(getApiUrl(`/api/projects/${projectId}/documents/${doc.id}`), {
           method: 'DELETE',
           headers: {
@@ -427,6 +428,7 @@ export default function ProjectDetailsPage() {
       }
 
       if (confirm('Are you sure you want to delete this BOQ document?')) {
+        console.log('🗑️ Deleting BOQ document:', doc.id, doc.name);
         const response = await fetch(getApiUrl(`/api/projects/${projectId}/documents/${doc.id}`), {
           method: 'DELETE',
           headers: {
