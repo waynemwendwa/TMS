@@ -323,6 +323,7 @@ export default function ProjectDetailsPage() {
       });
       if (res.ok) {
         const uploaded = (await res.json()) as ProjectDocument[];
+        console.log('📤 Preliminary documents uploaded:', uploaded.length);
         setPrelimDocs((prev) => [...uploaded, ...prev]);
         setFiles(null);
         setName("");
@@ -376,6 +377,7 @@ export default function ProjectDetailsPage() {
       });
       if (res.ok) {
         const uploaded = (await res.json()) as ProjectDocument[];
+        console.log('📤 BOQ documents uploaded:', uploaded.length);
         setBoqDocs((prev) => [...uploaded, ...prev]);
         setBoqFiles(null);
         setBoqSuccess('BOQ uploaded successfully.');
@@ -393,23 +395,31 @@ export default function ProjectDetailsPage() {
       const token = typeof window !== 'undefined' ? localStorage.getItem('tms_token') : null;
       if (!token) return;
 
+      console.log('🔄 Refreshing document lists...');
+
       // Refresh preliminary documents
-      const prelimResponse = await fetch(getApiUrl(`/api/projects/${projectId}/documents?category=PRELIMINARY`), {
+      const prelimResponse = await fetch(getApiUrl(`/api/projects/${projectId}/documents?documentType=preliminary`), {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (prelimResponse.ok) {
         const prelimData = await prelimResponse.json();
+        console.log('📄 Preliminary documents refreshed:', prelimData.length);
         setPrelimDocs(prelimData);
       }
 
       // Refresh BOQ documents
-      const boqResponse = await fetch(getApiUrl(`/api/projects/${projectId}/documents?category=BOQ_DOCUMENT`), {
+      const boqResponse = await fetch(getApiUrl(`/api/projects/${projectId}/documents?documentType=boq`), {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (boqResponse.ok) {
         const boqData = await boqResponse.json();
+        console.log('📋 BOQ documents refreshed:', boqData.length);
         setBoqDocs(boqData);
       }
+
+      // Show success message
+      setPrelimSuccess('Document lists refreshed successfully!');
+      setBoqSuccess('Document lists refreshed successfully!');
     } catch (error) {
       console.error('Error refreshing document lists:', error);
     }
