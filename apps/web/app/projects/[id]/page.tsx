@@ -502,30 +502,38 @@ export default function ProjectDetailsPage() {
         setPrelimDocs(prev => prev.filter(d => d.id !== doc.id));
         setJustDeleted(true);
         
-        const response = await fetch(getApiUrl(`/api/projects/${projectId}/documents/${doc.id}`), {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        try {
+          const response = await fetch(getApiUrl(`/api/projects/${projectId}/documents/${doc.id}`), {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
 
-        if (response.ok) {
-          setPrelimSuccess('Document deleted successfully!');
-          // Reset flag after 3 seconds
-          setTimeout(() => setJustDeleted(false), 3000);
-        } else {
-          const errorData = await response.json().catch(() => ({}));
-          if (response.status === 404) {
-            // Document not found in database, but already removed from frontend
-            console.log('⚠️ Document not found in database, but removed from frontend');
-            setPrelimSuccess('Document was already deleted or not found in database');
+          if (response.ok) {
+            setPrelimSuccess('Document deleted successfully!');
             // Reset flag after 3 seconds
             setTimeout(() => setJustDeleted(false), 3000);
           } else {
-            // If other error, add the document back to frontend
-            setPrelimDocs(prev => [...prev, doc]);
-            throw new Error(errorData.error || 'Failed to delete document');
+            const errorData = await response.json().catch(() => ({}));
+            if (response.status === 404) {
+              // Document not found in database, but already removed from frontend
+              console.log('⚠️ Document not found in database, but removed from frontend');
+              setPrelimSuccess('Document was already deleted or not found in database');
+              // Reset flag after 3 seconds
+              setTimeout(() => setJustDeleted(false), 3000);
+            } else {
+              // If other error, add the document back to frontend
+              setPrelimDocs(prev => [...prev, doc]);
+              throw new Error(errorData.error || 'Failed to delete document');
+            }
           }
+        } catch (fetchError) {
+          // If fetch fails completely, still keep document removed from frontend
+          console.log('⚠️ Fetch failed, but keeping document removed from frontend');
+          setPrelimSuccess('Document removed from view (deletion may have succeeded)');
+          // Reset flag after 3 seconds
+          setTimeout(() => setJustDeleted(false), 3000);
         }
       }
     } catch (error) {
@@ -549,30 +557,38 @@ export default function ProjectDetailsPage() {
         setBoqDocs(prev => prev.filter(d => d.id !== doc.id));
         setJustDeleted(true);
         
-        const response = await fetch(getApiUrl(`/api/projects/${projectId}/documents/${doc.id}`), {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        try {
+          const response = await fetch(getApiUrl(`/api/projects/${projectId}/documents/${doc.id}`), {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
 
-        if (response.ok) {
-          setBoqSuccess('BOQ document deleted successfully!');
-          // Reset flag after 3 seconds
-          setTimeout(() => setJustDeleted(false), 3000);
-        } else {
-          const errorData = await response.json().catch(() => ({}));
-          if (response.status === 404) {
-            // Document not found in database, but already removed from frontend
-            console.log('⚠️ BOQ document not found in database, but removed from frontend');
-            setBoqSuccess('BOQ document was already deleted or not found in database');
+          if (response.ok) {
+            setBoqSuccess('BOQ document deleted successfully!');
             // Reset flag after 3 seconds
             setTimeout(() => setJustDeleted(false), 3000);
           } else {
-            // If other error, add the document back to frontend
-            setBoqDocs(prev => [...prev, doc]);
-            throw new Error(errorData.error || 'Failed to delete document');
+            const errorData = await response.json().catch(() => ({}));
+            if (response.status === 404) {
+              // Document not found in database, but already removed from frontend
+              console.log('⚠️ BOQ document not found in database, but removed from frontend');
+              setBoqSuccess('BOQ document was already deleted or not found in database');
+              // Reset flag after 3 seconds
+              setTimeout(() => setJustDeleted(false), 3000);
+            } else {
+              // If other error, add the document back to frontend
+              setBoqDocs(prev => [...prev, doc]);
+              throw new Error(errorData.error || 'Failed to delete document');
+            }
           }
+        } catch (fetchError) {
+          // If fetch fails completely, still keep document removed from frontend
+          console.log('⚠️ Fetch failed, but keeping BOQ document removed from frontend');
+          setBoqSuccess('BOQ document removed from view (deletion may have succeeded)');
+          // Reset flag after 3 seconds
+          setTimeout(() => setJustDeleted(false), 3000);
         }
       }
     } catch (error) {
