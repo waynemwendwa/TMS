@@ -553,8 +553,15 @@ router.post('/:id/documents', requireAuth, projectUpload.array('documents', 10),
 router.delete('/documents/:docId', requireAuth, async (req: Request, res: Response) => {
   try {
     const { docId } = req.params;
+    console.log('🗑️ Delete request for document ID:', docId);
+    
     const doc = await prisma.projectDocument.findUnique({ where: { id: docId } });
-    if (!doc) return res.status(404).json({ error: 'Document not found' });
+    if (!doc) {
+      console.log('❌ Document not found for ID:', docId);
+      return res.status(404).json({ error: 'Document not found' });
+    }
+    
+    console.log('✅ Document found:', doc.id, doc.name);
 
     console.log('🗑️ Deleting project document:', doc.id, doc.filePath);
 

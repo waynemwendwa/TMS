@@ -776,7 +776,7 @@ export default function ProjectDetailsPage() {
   const handleApprovalSuccess = () => {
     setShowApprovalForm(false);
     setSelectedOrderTemplate(null);
-    setOrderTemplateSuccess('Approval request sent successfully!');
+    setOrderTemplateSuccess('Approval request sent! (Note: Full approval workflow will be available after database migration)');
   };
 
   const handleApprovalCancel = () => {

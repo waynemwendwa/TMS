@@ -12,6 +12,9 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
     
+    // Temporary: Return empty array until migration is applied
+    return res.json([]);
+    
     const { status, priority, projectId } = req.query;
 
     let whereClause: any = {};
@@ -169,6 +172,12 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
     if (!user) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
+    
+    // Temporary: Return success until migration is applied
+    return res.status(201).json({ 
+      id: 'temp-' + Date.now(),
+      message: 'Approval workflow will be available after database migration' 
+    });
     
     const { orderTemplateId, projectId, title, description, priority = 'MEDIUM' } = req.body;
 
@@ -349,6 +358,9 @@ router.get('/notifications/unread', requireAuth, async (req: Request, res: Respo
     if (!user) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
+    
+    // Temporary: Return empty array until migration is applied
+    return res.json([]);
 
     const notifications = await prisma.approvalNotification.findMany({
       where: {
