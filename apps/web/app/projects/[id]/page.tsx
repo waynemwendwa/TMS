@@ -993,7 +993,7 @@ export default function ProjectDetailsPage() {
                   </div>
                   <div className="flex items-center space-x-3">
                     <a
-                      href={`${getApiUrl('')}/api/upload/view?filePath=${encodeURIComponent(doc.filePath)}`}
+                      href={`${getApiUrl('')}/api/upload/view?filePath=${encodeURIComponent(doc.filePath || doc.url)}`}
                       target="_blank"
                       rel="noreferrer"
                       className="text-blue-600 hover:text-blue-800 text-sm"
@@ -1037,7 +1037,7 @@ export default function ProjectDetailsPage() {
                     <div className="font-medium text-gray-900">{doc.name}</div>
                     <div className="text-xs text-gray-500">{doc.category} • {new Date(doc.uploadedAt).toLocaleString()}</div>
                   </div>
-                  <a href={`${getApiUrl('')}/api/upload/view?filePath=${encodeURIComponent(doc.filePath)}`} target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-800 text-sm">View</a>
+                  <a href={`${getApiUrl('')}/api/upload/view?filePath=${encodeURIComponent(doc.filePath || doc.url)}`} target="_blank" rel="noreferrer" className="text-blue-600 hover:text-blue-800 text-sm">View</a>
                 </div>
               ))}
             </div>

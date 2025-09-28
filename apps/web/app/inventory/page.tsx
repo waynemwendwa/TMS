@@ -60,6 +60,7 @@ interface OrderDocument {
   type: 'pdf' | 'doc' | 'docx' | 'jpg' | 'jpeg' | 'png';
   size: number;
   url: string;
+  filePath: string;
   uploadedAt: string;
 }
 
@@ -848,7 +849,8 @@ export default function InventoryPage() {
                           <div className="flex space-x-2">
                             <button
                               onClick={() => {
-                                const viewUrl = `${getApiUrl('')}/api/upload/view?filePath=${encodeURIComponent(doc.filePath)}`;
+                                const filePath = doc.filePath || doc.url;
+                                const viewUrl = `${getApiUrl('')}/api/upload/view?filePath=${encodeURIComponent(filePath)}`;
                                 window.open(viewUrl, '_blank');
                               }}
                               className="text-blue-600 hover:text-blue-800"
@@ -857,7 +859,8 @@ export default function InventoryPage() {
                             </button>
                             <button
                               onClick={() => {
-                                const downloadUrl = `${getApiUrl('')}/api/upload/download?filePath=${encodeURIComponent(doc.filePath)}`;
+                                const filePath = doc.filePath || doc.url;
+                                const downloadUrl = `${getApiUrl('')}/api/upload/download?filePath=${encodeURIComponent(filePath)}`;
                                 const link = document.createElement('a');
                                 link.href = downloadUrl;
                                 link.download = doc.name;
