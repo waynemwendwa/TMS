@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { getApiUrl } from "../../../lib/config";
-import ApprovalRequestForm from '../../../components/ApprovalRequestForm';
 
 type Project = {
   id: string;
@@ -127,9 +126,6 @@ export default function ProjectDetailsPage() {
   const [uploading, setUploading] = useState(false);
   const [files, setFiles] = useState<FileList | null>(null);
   const [category, setCategory] = useState<ProjectDocument["category"]>("OTHER");
-  const [justDeleted, setJustDeleted] = useState(false);
-  const [lastDeleteTime, setLastDeleteTime] = useState<number | null>(null);
-  const [deletedDocumentIds, setDeletedDocumentIds] = useState<Set<string>>(new Set());
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [prelimError, setPrelimError] = useState<string | null>(null);
@@ -177,9 +173,6 @@ export default function ProjectDetailsPage() {
   const [orderFiles, setOrderFiles] = useState<FileList | null>(null);
   const [orderUploading, setOrderUploading] = useState(false);
 
-  // Approval form state
-  const [showApprovalForm, setShowApprovalForm] = useState(false);
-  const [selectedOrderTemplate, setSelectedOrderTemplate] = useState<{ id: string; title: string } | null>(null);
 
   // Comparison state
   const [compareTemplateId, setCompareTemplateId] = useState<string | null>(null);
@@ -216,16 +209,6 @@ export default function ProjectDetailsPage() {
   useEffect(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("tms_token") : null;
     if (!projectId || !token) return;
-    
-    // Don't run if we just deleted something (check both flag and timestamp)
-    const now = Date.now();
-    const timeSinceLastDelete = lastDeleteTime ? now - lastDeleteTime : Infinity;
-    const recentlyDeleted = justDeleted || (timeSinceLastDelete < 5000); // 5 seconds protection
-    
-    if (recentlyDeleted) {
-      console.log('⚠️ useEffect skipped - documents were recently deleted');
-      return;
-    }
 
     async function load() {
       setLoading(true);
@@ -233,55 +216,8 @@ export default function ProjectDetailsPage() {
       try {
         const tokenHeader = { headers: { Authorization: `Bearer ${token}` } } as const;
         
-        // If we just deleted something, skip document fetching to prevent override
-        if (justDeleted) {
-          console.log('⚠️ Skipping document fetch - just deleted something');
-          // Only fetch non-document data
-          const [projRes, procsRes, phasesRes, boqTemplatesRes, orderTemplatesRes, userRes] = await Promise.all([
-            fetch(getApiUrl(`/api/projects/${projectId}`), {
-              ...tokenHeader
-            }),
-            fetch(getApiUrl(`/api/projects/${projectId}/procurements`), {
-              ...tokenHeader
-            }),
-            fetch(getApiUrl(`/api/projects/${projectId}/phases`), {
-              ...tokenHeader
-            }),
-            fetch(getApiUrl(`/api/projects/${projectId}/boq-templates`), {
-              ...tokenHeader
-            }),
-            fetch(getApiUrl(`/api/projects/${projectId}/order-templates`), {
-              ...tokenHeader
-            }),
-            fetch(getApiUrl(`/api/auth/me`), {
-              ...tokenHeader
-            })
-          ]);
-          
-          // Handle non-document responses
-          if (projRes.ok) {
-            const p = await projRes.json();
-            setProject(p);
-            setStakeholders(p.stakeholders || []);
-          }
-          if (procsRes.ok) {
-            setProcurements(await procsRes.json());
-          }
-          if (phasesRes.ok) {
-            setPhases(await phasesRes.json());
-          }
-          if (boqTemplatesRes.ok) {
-            setBoqTemplates(await boqTemplatesRes.json());
-          }
-          if (orderTemplatesRes.ok) {
-            setOrderTemplates(await orderTemplatesRes.json());
-          }
-          if (userRes.ok) {
-            setUser(await userRes.json());
-          }
-        } else {
-          // Normal fetch including documents
-          const [projRes, docsRes, boqRes, procsRes, phasesRes, boqTemplatesRes, orderTemplatesRes, userRes] = await Promise.all([
+        // Fetch all data including documents
+        const [projRes, docsRes, boqRes, procsRes, phasesRes, boqTemplatesRes, orderTemplatesRes, userRes] = await Promise.all([
           fetch(getApiUrl(`/api/projects/${projectId}`), {
             ...tokenHeader
           }),
@@ -295,20 +231,20 @@ export default function ProjectDetailsPage() {
             ...tokenHeader
           }),
           fetch(getApiUrl(`/api/projects/${projectId}/phases`), {
-              ...tokenHeader
-            }),
-            fetch(getApiUrl(`/api/projects/${projectId}/boq-templates`), {
-              ...tokenHeader
-            }),
-            fetch(getApiUrl(`/api/projects/${projectId}/order-templates`), {
-              ...tokenHeader
-            }),
-            fetch(getApiUrl(`/api/auth/me`), {
+            ...tokenHeader
+          }),
+          fetch(getApiUrl(`/api/projects/${projectId}/boq-templates`), {
+            ...tokenHeader
+          }),
+          fetch(getApiUrl(`/api/projects/${projectId}/order-templates`), {
+            ...tokenHeader
+          }),
+          fetch(getApiUrl(`/api/auth/me`), {
             ...tokenHeader
           })
         ]);
-          
-          // Handle all responses including documents
+        
+        // Handle all responses
         if (projRes.ok) {
           const p = await projRes.json();
           setProject(p);
@@ -316,15 +252,11 @@ export default function ProjectDetailsPage() {
         }
         if (docsRes.ok) {
           const d = await docsRes.json();
-            // Filter out deleted documents
-            const filteredData = d.filter((doc: ProjectDocument) => !deletedDocumentIds.has(doc.id));
-            setPrelimDocs(filteredData);
+          setPrelimDocs(d);
         }
         if (boqRes.ok) {
           const d = await boqRes.json();
-            // Filter out deleted documents
-            const filteredData = d.filter((doc: ProjectDocument) => !deletedDocumentIds.has(doc.id));
-            setBoqDocs(filteredData);
+          setBoqDocs(d);
         }
         if (procsRes.ok) {
           setProcurements(await procsRes.json());
@@ -332,15 +264,14 @@ export default function ProjectDetailsPage() {
         if (phasesRes.ok) {
           setPhases(await phasesRes.json());
         }
-          if (boqTemplatesRes.ok) {
-            setBoqTemplates(await boqTemplatesRes.json());
-          }
-          if (orderTemplatesRes.ok) {
-            setOrderTemplates(await orderTemplatesRes.json());
-          }
-          if (userRes.ok) {
-            setUser(await userRes.json());
-          }
+        if (boqTemplatesRes.ok) {
+          setBoqTemplates(await boqTemplatesRes.json());
+        }
+        if (orderTemplatesRes.ok) {
+          setOrderTemplates(await orderTemplatesRes.json());
+        }
+        if (userRes.ok) {
+          setUser(await userRes.json());
         }
       } catch (err) {
         console.error("Error loading project:", err);
@@ -350,7 +281,7 @@ export default function ProjectDetailsPage() {
       }
     }
     load();
-  }, [projectId, deletedDocumentIds, justDeleted, lastDeleteTime]);
+  }, [projectId]);
 
   const onUpload = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -464,18 +395,6 @@ export default function ProjectDetailsPage() {
       const token = typeof window !== 'undefined' ? localStorage.getItem('tms_token') : null;
       if (!token) return;
 
-      // Don't refresh if we just deleted something (check both flag and timestamp)
-      const now = Date.now();
-      const timeSinceLastDelete = lastDeleteTime ? now - lastDeleteTime : Infinity;
-      const recentlyDeleted = justDeleted || (timeSinceLastDelete < 5000); // 5 seconds protection
-      
-      if (recentlyDeleted) {
-        console.log('⚠️ Skipping refresh - documents were recently deleted');
-        setPrelimSuccess('Refresh skipped - documents were recently deleted');
-        setBoqSuccess('Refresh skipped - documents were recently deleted');
-        return;
-      }
-
       console.log('🔄 Refreshing document lists...');
 
       // Refresh preliminary documents
@@ -484,11 +403,7 @@ export default function ProjectDetailsPage() {
       });
       if (prelimResponse.ok) {
         const prelimData = await prelimResponse.json();
-        console.log('📄 Preliminary documents refreshed:', prelimData.length);
-        // Filter out deleted documents
-        const filteredData = prelimData.filter((doc: ProjectDocument) => !deletedDocumentIds.has(doc.id));
-        console.log('📄 Filtered preliminary documents:', filteredData.length);
-        setPrelimDocs(filteredData);
+        setPrelimDocs(prelimData);
       }
 
       // Refresh BOQ documents
@@ -497,11 +412,7 @@ export default function ProjectDetailsPage() {
       });
       if (boqResponse.ok) {
         const boqData = await boqResponse.json();
-        console.log('📋 BOQ documents refreshed:', boqData.length);
-        // Filter out deleted documents
-        const filteredData = boqData.filter((doc: ProjectDocument) => !deletedDocumentIds.has(doc.id));
-        console.log('📋 Filtered BOQ documents:', filteredData.length);
-        setBoqDocs(filteredData);
+        setBoqDocs(boqData);
       }
 
       // Show success message
@@ -524,11 +435,10 @@ export default function ProjectDetailsPage() {
       if (confirm('Are you sure you want to delete this document?')) {
         console.log('🗑️ Deleting document:', doc.id, doc.name);
         
-        // Remove from frontend state immediately
+        // Optimistically remove from frontend state
         setPrelimDocs(prev => prev.filter(d => d.id !== doc.id));
-        setJustDeleted(true);
-        setLastDeleteTime(Date.now());
-        setDeletedDocumentIds(prev => new Set([...prev, doc.id]));
+        setPrelimError(null);
+        setPrelimSuccess(null);
         
         try {
           const response = await fetch(getApiUrl(`/api/projects/${projectId}/documents/${doc.id}`), {
@@ -540,49 +450,18 @@ export default function ProjectDetailsPage() {
 
           if (response.ok) {
             setPrelimSuccess('Document deleted successfully!');
-            // Reset flag after 3 seconds
-            setTimeout(() => setJustDeleted(false), 3000);
           } else {
             const errorData = await response.json().catch(() => ({}));
-            if (response.status === 404) {
-              // Document not found in database, but already removed from frontend
-              console.log('⚠️ Document not found in database, but removed from frontend');
-              setPrelimSuccess('Document was already deleted or not found in database');
-              // Reset flag after 3 seconds
-              setTimeout(() => setJustDeleted(false), 3000);
-            } else {
-              // If other error, add the document back to frontend
-              setPrelimDocs(prev => [...prev, doc]);
-              throw new Error(errorData.error || 'Failed to delete document');
-            }
+            // Add the document back to frontend if deletion failed
+            setPrelimDocs(prev => [...prev, doc]);
+            setPrelimError(errorData.error || 'Failed to delete document');
           }
-        } catch {
-          // If fetch fails completely, still keep document removed from frontend
-          console.log('⚠️ Fetch failed, but keeping document removed from frontend');
-          setPrelimSuccess('Document removed from view (deletion may have succeeded)');
-          // Reset flag after 3 seconds
-          setTimeout(() => setJustDeleted(false), 3000);
+        } catch (error) {
+          // Add the document back to frontend if request failed
+          setPrelimDocs(prev => [...prev, doc]);
+          setPrelimError('Failed to delete document. Please try again.');
+          console.error('Error deleting document:', error);
         }
-        
-        // Force a refresh after deletion to sync with database
-        setTimeout(async () => {
-          try {
-            console.log('🔄 Force refreshing after deletion...');
-            const prelimResponse = await fetch(getApiUrl(`/api/projects/${projectId}/documents?documentType=preliminary`), {
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (prelimResponse.ok) {
-              const prelimData = await prelimResponse.json();
-              console.log('📄 Preliminary documents after deletion:', prelimData.length);
-              // Filter out deleted documents
-              const filteredData = prelimData.filter((doc: ProjectDocument) => !deletedDocumentIds.has(doc.id));
-              console.log('📄 Filtered preliminary documents:', filteredData.length);
-              setPrelimDocs(filteredData);
-            }
-          } catch (error) {
-            console.error('Error force refreshing:', error);
-          }
-        }, 1000);
       }
     } catch (error) {
       console.error('Error deleting document:', error);
@@ -601,11 +480,10 @@ export default function ProjectDetailsPage() {
       if (confirm('Are you sure you want to delete this BOQ document?')) {
         console.log('🗑️ Deleting BOQ document:', doc.id, doc.name);
         
-        // Remove from frontend state immediately
+        // Optimistically remove from frontend state
         setBoqDocs(prev => prev.filter(d => d.id !== doc.id));
-        setJustDeleted(true);
-        setLastDeleteTime(Date.now());
-        setDeletedDocumentIds(prev => new Set([...prev, doc.id]));
+        setBoqError(null);
+        setBoqSuccess(null);
         
         try {
           const response = await fetch(getApiUrl(`/api/projects/${projectId}/documents/${doc.id}`), {
@@ -617,49 +495,18 @@ export default function ProjectDetailsPage() {
 
           if (response.ok) {
             setBoqSuccess('BOQ document deleted successfully!');
-            // Reset flag after 3 seconds
-            setTimeout(() => setJustDeleted(false), 3000);
           } else {
             const errorData = await response.json().catch(() => ({}));
-            if (response.status === 404) {
-              // Document not found in database, but already removed from frontend
-              console.log('⚠️ BOQ document not found in database, but removed from frontend');
-              setBoqSuccess('BOQ document was already deleted or not found in database');
-              // Reset flag after 3 seconds
-              setTimeout(() => setJustDeleted(false), 3000);
-            } else {
-              // If other error, add the document back to frontend
-              setBoqDocs(prev => [...prev, doc]);
-              throw new Error(errorData.error || 'Failed to delete document');
-            }
+            // Add the document back to frontend if deletion failed
+            setBoqDocs(prev => [...prev, doc]);
+            setBoqError(errorData.error || 'Failed to delete document');
           }
-        } catch {
-          // If fetch fails completely, still keep document removed from frontend
-          console.log('⚠️ Fetch failed, but keeping BOQ document removed from frontend');
-          setBoqSuccess('BOQ document removed from view (deletion may have succeeded)');
-          // Reset flag after 3 seconds
-          setTimeout(() => setJustDeleted(false), 3000);
+        } catch (error) {
+          // Add the document back to frontend if request failed
+          setBoqDocs(prev => [...prev, doc]);
+          setBoqError('Failed to delete document. Please try again.');
+          console.error('Error deleting BOQ document:', error);
         }
-        
-        // Force a refresh after deletion to sync with database
-        setTimeout(async () => {
-          try {
-            console.log('🔄 Force refreshing BOQ after deletion...');
-            const boqResponse = await fetch(getApiUrl(`/api/projects/${projectId}/documents?documentType=boq`), {
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (boqResponse.ok) {
-              const boqData = await boqResponse.json();
-              console.log('📋 BOQ documents after deletion:', boqData.length);
-              // Filter out deleted documents
-              const filteredData = boqData.filter((doc: ProjectDocument) => !deletedDocumentIds.has(doc.id));
-              console.log('📋 Filtered BOQ documents:', filteredData.length);
-              setBoqDocs(filteredData);
-            }
-          } catch (error) {
-            console.error('Error force refreshing BOQ:', error);
-          }
-        }, 1000);
       }
     } catch (error) {
       console.error('Error deleting BOQ document:', error);
@@ -987,21 +834,6 @@ export default function ProjectDetailsPage() {
     if (res.ok) setOrderTemplates((prev) => prev.filter((t) => t.id !== templateId));
   };
 
-  const sendForApproval = (templateId: string, templateTitle: string) => {
-    setSelectedOrderTemplate({ id: templateId, title: templateTitle });
-    setShowApprovalForm(true);
-  };
-
-  const handleApprovalSuccess = () => {
-    setShowApprovalForm(false);
-    setSelectedOrderTemplate(null);
-    setOrderTemplateSuccess('Approval request sent! (Note: Full approval workflow will be available after database migration)');
-  };
-
-  const handleApprovalCancel = () => {
-    setShowApprovalForm(false);
-    setSelectedOrderTemplate(null);
-  };
   const onUploadOrderDoc = async (e: React.FormEvent) => {
     e.preventDefault();
     setOrderTemplateError(null);
@@ -1615,7 +1447,6 @@ export default function ProjectDetailsPage() {
                   </div>
                   <div className="flex items-center space-x-2">
                     <button className="text-blue-600 hover:text-blue-800 text-sm" onClick={() => runComparison(t.id)}>Compare to BOQ</button>
-                    <button className="text-green-600 hover:text-green-800 text-sm" onClick={() => sendForApproval(t.id, t.title)}>Send for Approval</button>
                     <button className="text-red-600 hover:text-red-800 text-sm" onClick={() => deleteOrderTemplate(t.id)}>Delete</button>
                   </div>
                 </div>
@@ -1678,16 +1509,6 @@ export default function ProjectDetailsPage() {
         </div>
       )}
 
-      {/* Approval Request Form */}
-      {showApprovalForm && selectedOrderTemplate && (
-        <ApprovalRequestForm
-          projectId={projectId}
-          orderTemplateId={selectedOrderTemplate.id}
-          orderTemplateTitle={selectedOrderTemplate.title}
-          onSuccess={handleApprovalSuccess}
-          onCancel={handleApprovalCancel}
-        />
-      )}
 
       {/* Comparison Table */}
       {compareTemplateId && (

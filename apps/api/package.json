@@ -5,9 +5,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "tsx watch src/index.ts",
-    "build": "npm run migrate:deploy || npm run migrate:fallback && tsc -p tsconfig.json",
+    "build": "npm run migrate:deploy && tsc -p tsconfig.json",
     "migrate:deploy": "cd ../../packages/db && npm run migrate:deploy",
-    "migrate:fallback": "cd ../../packages/db && npm run migrate:approval",
     "start": "node dist/index.js"
   },
   "keywords": [],

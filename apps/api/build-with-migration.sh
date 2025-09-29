@@ -12,19 +12,13 @@ npm install
 echo "🗄️ Running database migration..."
 cd ../../packages/db
 
-# Try Prisma migration first
+# Run Prisma migration
 echo "📋 Running Prisma migration..."
 if npm run migrate:deploy; then
     echo "✅ Prisma migration completed successfully"
 else
-    echo "⚠️  Prisma migration failed, trying fallback..."
-    echo "📋 Running approval table migration..."
-    if npm run migrate:approval; then
-        echo "✅ Fallback migration completed successfully"
-    else
-        echo "❌ Both migrations failed, but continuing with build..."
-        echo "⚠️  Approval tables may need to be created manually"
-    fi
+    echo "⚠️  Prisma migration failed, but continuing with build..."
+    echo "⚠️  Database tables may need to be created manually"
 fi
 
 echo "🔧 Generating Prisma client..."
