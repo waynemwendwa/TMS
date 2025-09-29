@@ -54,6 +54,9 @@ export default function ApprovalRequestForm({
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        if (response.status === 503) {
+          throw new Error('Approval system is not available. Database migration required. Please contact the administrator.');
+        }
         throw new Error(errorData.error || 'Failed to create approval request');
       }
 

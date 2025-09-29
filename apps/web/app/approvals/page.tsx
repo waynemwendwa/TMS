@@ -90,6 +90,9 @@ export default function ApprovalsPage() {
       });
 
       if (!response.ok) {
+        if (response.status === 503) {
+          throw new Error('Approval system is not available. Database migration required. Please contact the administrator.');
+        }
         throw new Error('Failed to fetch approval requests');
       }
 

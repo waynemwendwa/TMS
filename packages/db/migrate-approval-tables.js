@@ -3,7 +3,8 @@
 // Migration script to create approval tables
 // This runs during the build process to ensure tables exist
 
-const { Client } = require('pg');
+import pkg from 'pg';
+const { Client } = pkg;
 
 // Check if we're in a build environment
 const isBuildEnvironment = process.env.NODE_ENV === 'production' || process.env.RENDER;
@@ -19,9 +20,27 @@ async function runMigration() {
     connectionString: process.env.DATABASE_URL
   });
 
-  try {
-    await client.connect();
-    console.log('🔗 Connected to database');
+  // Retry connection with exponential backoff
+  let retries = 5;
+  let delay = 1000;
+  
+  while (retries > 0) {
+    try {
+      await client.connect();
+      console.log('🔗 Connected to database');
+      break;
+    } catch (error) {
+      retries--;
+      if (retries === 0) {
+        console.log('❌ Failed to connect to database after 5 attempts');
+        console.log('⚠️  Skipping approval table migration - tables may need to be created manually');
+        return;
+      }
+      console.log(`⏳ Connection failed, retrying in ${delay}ms... (${retries} attempts left)`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      delay *= 2;
+    }
+  }
 
     // Create enums
     console.log('📝 Creating enums...');
@@ -43,7 +62,7 @@ async function runMigration() {
 
     await client.query(`
       DO $$ BEGIN
-        CREATE TYPE "NotificationType" AS ENUM ('APPROVAL_REQUEST', 'APPROVAL_UPDATE', 'GENERAL');
+        CREATE TYPE "NotificationType" AS ENUM ('APPROVAL_REQUEST', 'APPROVAL_APPROVED', 'APPROVAL_REJECTED', 'REMINDER');
       EXCEPTION
         WHEN duplicate_object THEN null;
       END $$;
@@ -154,9 +173,14 @@ async function runMigration() {
 
   } catch (error) {
     console.error('❌ Migration failed:', error);
-    process.exit(1);
+    console.log('⚠️  Continuing build process - approval tables may need to be created manually');
+    // Don't exit with error code to avoid breaking the build
   } finally {
-    await client.end();
+    try {
+      await client.end();
+    } catch (e) {
+      // Ignore connection close errors
+    }
   }
 }
 

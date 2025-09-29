@@ -11,6 +11,17 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     if (!user) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
+
+    // Check if approval tables exist
+    try {
+      await prisma.approvalRequest.findFirst();
+    } catch (error) {
+      console.error('Approval tables not found:', error);
+      return res.status(503).json({ 
+        error: 'Approval system is not available. Database migration required.',
+        details: 'The approval workflow tables have not been created yet. Please contact the administrator.'
+      });
+    }
     
     const { status, priority, projectId } = req.query;
 
@@ -168,6 +179,17 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
     const user = req.user;
     if (!user) {
       return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    // Check if approval tables exist
+    try {
+      await prisma.approvalRequest.findFirst();
+    } catch (error) {
+      console.error('Approval tables not found:', error);
+      return res.status(503).json({ 
+        error: 'Approval system is not available. Database migration required.',
+        details: 'The approval workflow tables have not been created yet. Please contact the administrator.'
+      });
     }
     
     const { orderTemplateId, projectId, title, description, priority = 'MEDIUM' } = req.body;

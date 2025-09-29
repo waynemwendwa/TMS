@@ -13,14 +13,17 @@ echo "🗄️ Running database migration..."
 cd ../../packages/db
 
 # Try Prisma migration first
+echo "📋 Running Prisma migration..."
 if npm run migrate:deploy; then
     echo "✅ Prisma migration completed successfully"
 else
     echo "⚠️  Prisma migration failed, trying fallback..."
+    echo "📋 Running approval table migration..."
     if npm run migrate:approval; then
         echo "✅ Fallback migration completed successfully"
     else
         echo "❌ Both migrations failed, but continuing with build..."
+        echo "⚠️  Approval tables may need to be created manually"
     fi
 fi
 
