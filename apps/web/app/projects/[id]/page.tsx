@@ -141,6 +141,15 @@ export default function ProjectDetailsPage() {
     role: string;
   }[]>([]);
   const [newStakeholder, setNewStakeholder] = useState({ name: "", email: "", phone: "", location: "", role: "CLIENT" });
+  const [selectedStakeholder, setSelectedStakeholder] = useState<{
+    id: string;
+    name: string;
+    email?: string;
+    phone?: string;
+    location?: string;
+    role: string;
+  } | null>(null);
+  const [showStakeholderModal, setShowStakeholderModal] = useState(false);
 
   // BOQ docs state
   const [boqDocs, setBoqDocs] = useState<ProjectDocument[]>([]);
@@ -1570,7 +1579,22 @@ export default function ProjectDetailsPage() {
           ) : (
             <div className="space-y-2">
               {stakeholders.map((s) => (
-                <div key={s.id} className="p-3 border rounded-md">
+                <div
+                  key={s.id}
+                  className="p-3 border rounded-md cursor-pointer hover:bg-gray-50"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {
+                    setSelectedStakeholder(s);
+                    setShowStakeholderModal(true);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      setSelectedStakeholder(s);
+                      setShowStakeholderModal(true);
+                    }
+                  }}
+                >
                   <div className="font-medium text-gray-900">{s.name} <span className="text-xs text-gray-500">({s.role})</span></div>
                   <div className="text-xs text-gray-500">{s.name ? `${s.email || '-' } • ${s.phone || '-' } • ${s.location || '-'}` : '-'}</div>
                 </div>
@@ -1787,6 +1811,69 @@ export default function ProjectDetailsPage() {
           )}
         </div>
       </div>
+      )}
+
+      {/* Stakeholder Details Modal */}
+      {showStakeholderModal && selectedStakeholder && (
+        <div className="fixed inset-0 z-50">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => {
+              setShowStakeholderModal(false);
+              setSelectedStakeholder(null);
+            }}
+          />
+          <div className="absolute inset-0 flex items-center justify-center p-4">
+            <div className="w-full max-w-md bg-white rounded-lg shadow-lg">
+              <div className="flex items-center justify-between px-4 py-3 border-b">
+                <h3 className="text-lg font-semibold text-gray-900">Stakeholder Details</h3>
+                <button
+                  className="text-gray-500 hover:text-gray-700"
+                  onClick={() => {
+                    setShowStakeholderModal(false);
+                    setSelectedStakeholder(null);
+                  }}
+                  aria-label="Close"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="px-4 py-4 space-y-2">
+                <div>
+                  <div className="text-sm text-gray-500">Name</div>
+                  <div className="text-gray-900 font-medium">{selectedStakeholder.name}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">Role</div>
+                  <div className="text-gray-900">{selectedStakeholder.role}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">Email</div>
+                  <div className="text-gray-900">{selectedStakeholder.email || '-'}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">Phone</div>
+                  <div className="text-gray-900">{selectedStakeholder.phone || '-'}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">Location</div>
+                  <div className="text-gray-900">{selectedStakeholder.location || '-'}</div>
+                </div>
+              </div>
+              <div className="px-4 py-3 border-t flex justify-end">
+                <button
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                  onClick={() => {
+                    setShowStakeholderModal(false);
+                    setSelectedStakeholder(null);
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>
