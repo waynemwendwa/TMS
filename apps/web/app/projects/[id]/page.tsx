@@ -150,6 +150,7 @@ export default function ProjectDetailsPage() {
     role: string;
   } | null>(null);
   const [showStakeholderModal, setShowStakeholderModal] = useState(false);
+  const [deletingStakeholderId, setDeletingStakeholderId] = useState<string | null>(null);
 
   // BOQ docs state
   const [boqDocs, setBoqDocs] = useState<ProjectDocument[]>([]);
@@ -929,6 +930,33 @@ export default function ProjectDetailsPage() {
     }
   };
 
+  const deleteStakeholder = async (stakeholderId: string) => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("tms_token") : null;
+    if (!token) return;
+    if (!confirm('Delete this stakeholder?')) return;
+    try {
+      setDeletingStakeholderId(stakeholderId);
+      const res = await fetch(getApiUrl(`/api/projects/stakeholders/${stakeholderId}`), {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setStakeholders((prev) => prev.filter((s) => s.id !== stakeholderId));
+        if (selectedStakeholder?.id === stakeholderId) {
+          setShowStakeholderModal(false);
+          setSelectedStakeholder(null);
+        }
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setStakeholderError(err.error || 'Failed to delete stakeholder');
+      }
+    } catch (e) {
+      setStakeholderError('Failed to delete stakeholder');
+    } finally {
+      setDeletingStakeholderId(null);
+    }
+  };
+
   const addProcurement = async (e: React.FormEvent) => {
     e.preventDefault();
     setProcError(null);
@@ -1595,8 +1623,24 @@ export default function ProjectDetailsPage() {
                     }
                   }}
                 >
-                  <div className="font-medium text-gray-900">{s.name} <span className="text-xs text-gray-500">({s.role})</span></div>
-                  <div className="text-xs text-gray-500">{s.name ? `${s.email || '-' } • ${s.phone || '-' } • ${s.location || '-'}` : '-'}</div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="font-medium text-gray-900">{s.name} <span className="text-xs text-gray-500">({s.role})</span></div>
+                      <div className="text-xs text-gray-500">{s.name ? `${s.email || '-' } • ${s.phone || '-' } • ${s.location || '-'}` : '-'}</div>
+                    </div>
+                    <button
+                      className="shrink-0 text-red-600 hover:text-red-800 text-xs px-2 py-1 rounded"
+                      aria-label="Delete stakeholder"
+                      title="Delete"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteStakeholder(s.id);
+                      }}
+                      disabled={deletingStakeholderId === s.id}
+                    >
+                      {deletingStakeholderId === s.id ? 'Deleting…' : '🗑️'}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -1860,7 +1904,14 @@ export default function ProjectDetailsPage() {
                   <div className="text-gray-900">{selectedStakeholder.location || '-'}</div>
                 </div>
               </div>
-              <div className="px-4 py-3 border-t flex justify-end">
+              <div className="px-4 py-3 border-t flex justify-between items-center">
+                <button
+                  className="text-white bg-red-600 hover:bg-red-700 px-4 py-2 rounded-md disabled:opacity-60"
+                  onClick={() => deleteStakeholder(selectedStakeholder.id)}
+                  disabled={deletingStakeholderId === selectedStakeholder.id}
+                >
+                  {deletingStakeholderId === selectedStakeholder.id ? 'Deleting…' : 'Delete Stakeholder'}
+                </button>
                 <button
                   className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
                   onClick={() => {
