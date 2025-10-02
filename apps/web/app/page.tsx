@@ -365,176 +365,122 @@ function TMSDashboard({ user, inventoryStats, projectStats, inventoryCategoryCou
         <p className="text-blue-100">TMS Management Dashboard</p>
       </div>
 
-      {/* Overview Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Inventory Stats */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <span className="text-2xl">📦</span>
-            </div>
-            <div className="ml-4">
-              <div className="text-2xl font-bold text-blue-600">{inventoryStats.totalItems}</div>
-              <div className="text-sm text-gray-600">Total Items</div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <span className="text-2xl">⚠️</span>
-            </div>
-            <div className="ml-4">
-              <div className="text-2xl font-bold text-orange-600">{inventoryStats.lowStockItems}</div>
-              <div className="text-sm text-gray-600">Low Stock</div>
-            </div>
-          </div>
-        </div>
-
+      {/* Main Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         {/* Project Stats */}
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
           <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <span className="text-2xl">🏗️</span>
+            <div className="p-3 bg-gradient-to-br from-green-400 to-green-600 rounded-xl">
+              <span className="text-2xl text-white">🏗️</span>
             </div>
             <div className="ml-4">
-              <div className="text-2xl font-bold text-green-600">{projectStats.totalProjects}</div>
-              <div className="text-sm text-gray-600">Total Projects</div>
+              <div className="text-3xl font-bold text-gray-900">{projectStats.totalProjects}</div>
+              <div className="text-sm text-gray-600 font-medium">Total Projects</div>
             </div>
           </div>
         </div>
         
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
           <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <span className="text-2xl">⚡</span>
+            <div className="p-3 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl">
+              <span className="text-2xl text-white">⚡</span>
             </div>
             <div className="ml-4">
-              <div className="text-2xl font-bold text-purple-600">{projectStats.ongoingProjects}</div>
-              <div className="text-sm text-gray-600">Active Projects</div>
+              <div className="text-3xl font-bold text-gray-900">{projectStats.ongoingProjects}</div>
+              <div className="text-sm text-gray-600 font-medium">Active Projects</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Inventory Categories */}
+        <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+          <div className="flex items-center">
+            <div className="p-3 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl">
+              <span className="text-2xl text-white">📄</span>
+            </div>
+            <div className="ml-4">
+              <div className="text-3xl font-bold text-gray-900">{inventoryCategoryCounts.documents}</div>
+              <div className="text-sm text-gray-600 font-medium">Documents</div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+          <div className="flex items-center">
+            <div className="p-3 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl">
+              <span className="text-2xl text-white">🛠️</span>
+            </div>
+            <div className="ml-4">
+              <div className="text-3xl font-bold text-gray-900">{inventoryCategoryCounts.equipment}</div>
+              <div className="text-sm text-gray-600 font-medium">Equipment</div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+          <div className="flex items-center">
+            <div className="p-3 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl">
+              <span className="text-2xl text-white">🧾</span>
+            </div>
+            <div className="ml-4">
+              <div className="text-3xl font-bold text-gray-900">{inventoryCategoryCounts.ordersReceipts}</div>
+              <div className="text-sm text-gray-600 font-medium">Orders</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Inventory Categories */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <span className="text-2xl">📄</span>
-            </div>
-            <div className="ml-4">
-              <div className="text-2xl font-bold text-blue-600">{inventoryCategoryCounts.documents}</div>
-              <div className="text-sm text-gray-600">Office Documents</div>
-            </div>
+      {/* Project Status Overview */}
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+          <span className="text-2xl mr-3">📊</span>
+          Project Status Overview
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="text-center p-4 bg-gray-50 rounded-lg">
+            <div className="text-3xl font-bold text-gray-600 mb-2">{projectStats.toStartProjects}</div>
+            <div className="text-sm text-gray-600 font-medium">To Start</div>
+            <div className="text-xs text-gray-500 mt-1">Ready to begin</div>
           </div>
-        </div>
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <span className="text-2xl">🛠️</span>
-            </div>
-            <div className="ml-4">
-              <div className="text-2xl font-bold text-green-600">{inventoryCategoryCounts.equipment}</div>
-              <div className="text-sm text-gray-600">Tools & Equipment</div>
-            </div>
+          <div className="text-center p-4 bg-blue-50 rounded-lg">
+            <div className="text-3xl font-bold text-blue-600 mb-2">{projectStats.ongoingProjects}</div>
+            <div className="text-sm text-gray-600 font-medium">Ongoing</div>
+            <div className="text-xs text-gray-500 mt-1">Active projects</div>
           </div>
-        </div>
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <span className="text-2xl">🧾</span>
-            </div>
-            <div className="ml-4">
-              <div className="text-2xl font-bold text-purple-600">{inventoryCategoryCounts.ordersReceipts}</div>
-              <div className="text-sm text-gray-600">Orders & Receipts</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Detailed Stats Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Inventory Overview */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <span className="text-2xl mr-2">📦</span>
-            Inventory Overview
-          </h3>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-              <div>
-                <div className="font-medium text-gray-900">Total Items</div>
-                <div className="text-sm text-gray-500">All inventory items</div>
-              </div>
-              <div className="text-2xl font-bold text-blue-600">{inventoryStats.totalItems}</div>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-              <div>
-                <div className="font-medium text-gray-900">Low Stock Items</div>
-                <div className="text-sm text-gray-500">Items below minimum stock</div>
-              </div>
-              <div className="text-2xl font-bold text-orange-600">{inventoryStats.lowStockItems}</div>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-              <div>
-                <div className="font-medium text-gray-900">Out of Stock</div>
-                <div className="text-sm text-gray-500">Items with zero stock</div>
-              </div>
-              <div className="text-2xl font-bold text-red-600">{inventoryStats.outOfStockItems}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Project Overview */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <span className="text-2xl mr-2">🏗️</span>
-            Project Overview
-          </h3>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-              <div>
-                <div className="font-medium text-gray-900">To Start</div>
-                <div className="text-sm text-gray-500">Projects ready to begin</div>
-              </div>
-              <div className="text-2xl font-bold text-gray-600">{projectStats.toStartProjects}</div>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-              <div>
-                <div className="font-medium text-gray-900">Ongoing</div>
-                <div className="text-sm text-gray-500">Active projects</div>
-              </div>
-              <div className="text-2xl font-bold text-blue-600">{projectStats.ongoingProjects}</div>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-              <div>
-                <div className="font-medium text-gray-900">Completed</div>
-                <div className="text-sm text-gray-500">Finished projects</div>
-              </div>
-              <div className="text-2xl font-bold text-green-600">{projectStats.completedProjects}</div>
-            </div>
+          <div className="text-center p-4 bg-green-50 rounded-lg">
+            <div className="text-3xl font-bold text-green-600 mb-2">{projectStats.completedProjects}</div>
+            <div className="text-sm text-gray-600 font-medium">Completed</div>
+            <div className="text-xs text-gray-500 mt-1">Finished projects</div>
           </div>
         </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+          <span className="text-2xl mr-3">⚡</span>
+          Quick Actions
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Link href="/inventory" className="bg-blue-600 text-white text-center px-4 py-3 rounded-md hover:bg-blue-700 transition-colors">
-            📦 Manage Inventory
+          <Link href="/inventory" className="bg-gradient-to-r from-blue-500 to-blue-600 text-white text-center px-6 py-4 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-1">
+            <div className="text-2xl mb-2">📦</div>
+            <div className="font-medium">Manage Inventory</div>
+            <div className="text-sm opacity-90">View & manage items</div>
           </Link>
-          <Link href="/projects" className="bg-green-600 text-white text-center px-4 py-3 rounded-md hover:bg-green-700 transition-colors">
-            🏗️ Manage Projects
+          <Link href="/projects" className="bg-gradient-to-r from-green-500 to-green-600 text-white text-center px-6 py-4 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-1">
+            <div className="text-2xl mb-2">🏗️</div>
+            <div className="font-medium">Manage Projects</div>
+            <div className="text-sm opacity-90">View & manage projects</div>
           </Link>
-          <Link href="/inventory" className="bg-orange-600 text-white text-center px-4 py-3 rounded-md hover:bg-orange-700 transition-colors">
-            ➕ Add Inventory Item
+          <Link href="/inventory" className="bg-gradient-to-r from-orange-500 to-orange-600 text-white text-center px-6 py-4 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-1">
+            <div className="text-2xl mb-2">➕</div>
+            <div className="font-medium">Add Item</div>
+            <div className="text-sm opacity-90">Add new inventory</div>
           </Link>
-          <Link href="/projects" className="bg-purple-600 text-white text-center px-4 py-3 rounded-md hover:bg-purple-700 transition-colors">
-            ➕ Create Project
+          <Link href="/projects" className="bg-gradient-to-r from-purple-500 to-purple-600 text-white text-center px-6 py-4 rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-1">
+            <div className="text-2xl mb-2">➕</div>
+            <div className="font-medium">Create Project</div>
+            <div className="text-sm opacity-90">Start new project</div>
           </Link>
         </div>
       </div>
@@ -543,28 +489,31 @@ function TMSDashboard({ user, inventoryStats, projectStats, inventoryCategoryCou
       <ProjectAnalytics user={user} />
 
       {/* System Status */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">System Status</h3>
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+          <span className="text-2xl mr-3">🔧</span>
+          System Status
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="flex items-center p-3 bg-green-50 rounded-lg">
-            <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+          <div className="flex items-center p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200">
+            <div className="w-4 h-4 bg-green-500 rounded-full mr-4 animate-pulse"></div>
             <div>
-              <div className="font-medium text-green-900">Database</div>
-              <div className="text-sm text-green-700">Connected</div>
+              <div className="font-semibold text-green-900">Database</div>
+              <div className="text-sm text-green-700">Connected & Healthy</div>
             </div>
           </div>
-          <div className="flex items-center p-3 bg-green-50 rounded-lg">
-            <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+          <div className="flex items-center p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200">
+            <div className="w-4 h-4 bg-green-500 rounded-full mr-4 animate-pulse"></div>
             <div>
-              <div className="font-medium text-green-900">API</div>
-              <div className="text-sm text-green-700">Online</div>
+              <div className="font-semibold text-green-900">API Services</div>
+              <div className="text-sm text-green-700">Online & Responsive</div>
             </div>
           </div>
-          <div className="flex items-center p-3 bg-green-50 rounded-lg">
-            <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+          <div className="flex items-center p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200">
+            <div className="w-4 h-4 bg-green-500 rounded-full mr-4 animate-pulse"></div>
             <div>
-              <div className="font-medium text-green-900">Authentication</div>
-              <div className="text-sm text-green-700">Active</div>
+              <div className="font-semibold text-green-900">Authentication</div>
+              <div className="text-sm text-green-700">Active & Secure</div>
             </div>
           </div>
         </div>
