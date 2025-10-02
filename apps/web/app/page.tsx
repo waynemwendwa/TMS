@@ -18,6 +18,11 @@ export default function Home() {
     ongoingProjects: 0,
     completedProjects: 0
   });
+  const [inventoryCategoryCounts, setInventoryCategoryCounts] = useState({
+    documents: 0,
+    equipment: 0,
+    ordersReceipts: 0
+  });
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('tms_token') : null;
@@ -51,22 +56,71 @@ export default function Home() {
           const totalItems = data.length;
           const lowStockItems = data.filter((item: any) => item.currentStock <= item.minStock && item.currentStock > 0).length;
           const outOfStockItems = data.filter((item: any) => item.currentStock === 0).length;
-          if (isMounted) setInventoryStats({ totalItems, lowStockItems, outOfStockItems });
+          if (isMounted) {
+            setInventoryStats({ totalItems, lowStockItems, outOfStockItems });
+            // equipment count mirrors total inventory items
+            setInventoryCategoryCounts(prev => ({ ...prev, equipment: totalItems }));
+          }
         }
       } catch (error) {
         console.error('Error fetching inventory stats:', error);
       }
     };
 
+    const fetchOfficeDocumentsCount = async () => {
+      try {
+        const res = await fetch(getApiUrl('/api/upload/office-documents'));
+        if (res.ok) {
+          const docs = await res.json();
+          if (isMounted) setInventoryCategoryCounts(prev => ({ ...prev, documents: Array.isArray(docs) ? docs.length : 0 }));
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+
+    const fetchOrdersReceiptsCount = async () => {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('tms_token') : null;
+      if (!token || !isMounted) return;
+      try {
+        const headers = { Authorization: `Bearer ${token}` } as const;
+        const projectsRes = await fetch(getApiUrl('/api/projects'), { headers });
+        if (!projectsRes.ok) return;
+        const projects: Array<{ id: string }> = await projectsRes.json();
+        const results = await Promise.all(
+          projects.map(async (p) => {
+            const r = await fetch(getApiUrl(`/api/projects/${p.id}/order-templates`), { headers });
+            if (!r.ok) return 0;
+            const templates = await r.json();
+            return Array.isArray(templates) ? templates.length : 0;
+          })
+        );
+        const count = results.reduce((a, b) => a + b, 0);
+        if (isMounted) setInventoryCategoryCounts(prev => ({ ...prev, ordersReceipts: count }));
+      } catch (e) {
+        // ignore
+      }
+    };
+
     // initial load
     fetchInventoryStats();
+    fetchOfficeDocumentsCount();
+    fetchOrdersReceiptsCount();
 
     // poll every 15s
-    const intervalId = setInterval(fetchInventoryStats, 15000);
+    const intervalId = setInterval(() => {
+      fetchInventoryStats();
+      fetchOfficeDocumentsCount();
+      fetchOrdersReceiptsCount();
+    }, 15000);
 
     // refresh when tab gains focus/visibility
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') fetchInventoryStats();
+      if (document.visibilityState === 'visible') {
+        fetchInventoryStats();
+        fetchOfficeDocumentsCount();
+        fetchOrdersReceiptsCount();
+      }
     };
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', handleVisibility);
@@ -106,7 +160,7 @@ export default function Home() {
 
   // If user is logged in, show role-based dashboard
   if (user) {
-    return <RoleBasedDashboard user={user} inventoryStats={inventoryStats} projectStats={projectStats} />;
+    return <RoleBasedDashboard user={user} inventoryStats={inventoryStats} projectStats={projectStats} inventoryCategoryCounts={inventoryCategoryCounts} />;
   }
 
   // Landing page for non-logged-in users
@@ -215,13 +269,13 @@ export default function Home() {
 }
 
 // Role-based Dashboard Router
-function RoleBasedDashboard({ user, inventoryStats, projectStats }: { user: any, inventoryStats: any, projectStats: any }) {
+function RoleBasedDashboard({ user, inventoryStats, projectStats, inventoryCategoryCounts }: { user: any, inventoryStats: any, projectStats: any, inventoryCategoryCounts: any }) {
   if (user.role === 'SITE_SUPERVISOR') {
     return <SiteSupervisorDashboard user={user} projectStats={projectStats} />;
   }
 
   // Full access for Chairman and Chairman's PA; others fall back to full dashboard for now
-  return <TMSDashboard user={user} inventoryStats={inventoryStats} projectStats={projectStats} />;
+  return <TMSDashboard user={user} inventoryStats={inventoryStats} projectStats={projectStats} inventoryCategoryCounts={inventoryCategoryCounts} />;
 }
 
 // Limited dashboard for Site Supervisors (will refine based on your specs)
@@ -302,7 +356,7 @@ function SiteSupervisorDashboard({ user, projectStats }: { user: any, projectSta
 }
 
 // TMS Dashboard Component
-function TMSDashboard({ user, inventoryStats, projectStats }: { user: any, inventoryStats: any, projectStats: any }) {
+function TMSDashboard({ user, inventoryStats, projectStats, inventoryCategoryCounts }: { user: any, inventoryStats: any, projectStats: any, inventoryCategoryCounts: any }) {
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
@@ -359,6 +413,43 @@ function TMSDashboard({ user, inventoryStats, projectStats }: { user: any, inven
             <div className="ml-4">
               <div className="text-2xl font-bold text-purple-600">{projectStats.ongoingProjects}</div>
               <div className="text-sm text-gray-600">Active Projects</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Inventory Categories */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <span className="text-2xl">📄</span>
+            </div>
+            <div className="ml-4">
+              <div className="text-2xl font-bold text-blue-600">{inventoryCategoryCounts.documents}</div>
+              <div className="text-sm text-gray-600">Office Documents</div>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <span className="text-2xl">🛠️</span>
+            </div>
+            <div className="ml-4">
+              <div className="text-2xl font-bold text-green-600">{inventoryCategoryCounts.equipment}</div>
+              <div className="text-sm text-gray-600">Tools & Equipment</div>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <span className="text-2xl">🧾</span>
+            </div>
+            <div className="ml-4">
+              <div className="text-2xl font-bold text-purple-600">{inventoryCategoryCounts.ordersReceipts}</div>
+              <div className="text-sm text-gray-600">Orders & Receipts</div>
             </div>
           </div>
         </div>
