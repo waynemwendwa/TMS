@@ -1904,14 +1904,7 @@ export default function ProjectDetailsPage() {
                   <div className="text-gray-900">{selectedStakeholder.location || '-'}</div>
                 </div>
               </div>
-              <div className="px-4 py-3 border-t flex justify-between items-center">
-                <button
-                  className="text-white bg-red-600 hover:bg-red-700 px-4 py-2 rounded-md disabled:opacity-60"
-                  onClick={() => deleteStakeholder(selectedStakeholder.id)}
-                  disabled={deletingStakeholderId === selectedStakeholder.id}
-                >
-                  {deletingStakeholderId === selectedStakeholder.id ? 'Deleting…' : 'Delete Stakeholder'}
-                </button>
+              <div className="px-4 py-3 border-t flex justify-end items-center">
                 <button
                   className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
                   onClick={() => {

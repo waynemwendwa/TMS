@@ -37,9 +37,11 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('tms_token') : null;
-    async function fetchInventoryStats() {
-      if (!token) return;
+    let isMounted = true;
+
+    const fetchInventoryStats = async () => {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('tms_token') : null;
+      if (!token || !isMounted) return;
       try {
         const res = await fetch(getApiUrl('/api/inventory'), {
           headers: { Authorization: `Bearer ${token}` }
@@ -49,13 +51,34 @@ export default function Home() {
           const totalItems = data.length;
           const lowStockItems = data.filter((item: any) => item.currentStock <= item.minStock && item.currentStock > 0).length;
           const outOfStockItems = data.filter((item: any) => item.currentStock === 0).length;
-          setInventoryStats({ totalItems, lowStockItems, outOfStockItems });
+          if (isMounted) setInventoryStats({ totalItems, lowStockItems, outOfStockItems });
         }
       } catch (error) {
         console.error('Error fetching inventory stats:', error);
       }
-    }
+    };
+
+    // initial load
     fetchInventoryStats();
+
+    // poll every 15s
+    const intervalId = setInterval(fetchInventoryStats, 15000);
+
+    // refresh when tab gains focus/visibility
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') fetchInventoryStats();
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibility);
+    }
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibility);
+      }
+    };
   }, []);
 
   useEffect(() => {

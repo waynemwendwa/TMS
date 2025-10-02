@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { getApiUrl } from '../../lib/config';
 
 interface ProjectAnalytics {
@@ -51,6 +52,7 @@ export default function ProjectAnalytics({}: ProjectAnalyticsProps) {
   const [analytics, setAnalytics] = useState<ProjectAnalytics[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchAnalytics() {
@@ -221,16 +223,20 @@ export default function ProjectAnalytics({}: ProjectAnalyticsProps) {
       
       <div className="space-y-6">
         {analytics.map((project) => (
-          <div key={project.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+          <div
+            key={project.id}
+            className="group border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+            role="button"
+            tabIndex={0}
+            onClick={() => router.push(`/projects/${project.id}`)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') router.push(`/projects/${project.id}`);
+            }}
+          >
             {/* Project Header */}
             <div className="flex justify-between items-start mb-4">
               <div className="flex-1">
-                <Link 
-                  href={`/projects/${project.id}`}
-                  className="text-lg font-semibold text-blue-600 hover:text-blue-800 transition-colors"
-                >
-                  {project.title}
-                </Link>
+                <span className="text-lg font-semibold text-blue-600 hover:text-blue-800 transition-colors">{project.title}</span>
                 {project.description && (
                   <p className="text-sm text-gray-600 mt-1">{project.description}</p>
                 )}
@@ -252,10 +258,13 @@ export default function ProjectAnalytics({}: ProjectAnalyticsProps) {
                 </div>
               </div>
               
-              {/* Health Status Badge */}
-              <div className={`px-3 py-1 rounded-full text-sm font-medium flex items-center ${getHealthStatusColor(project.healthStatus)}`}>
-                <span className="mr-1">{getHealthStatusIcon(project.healthStatus)}</span>
-                {project.healthStatus.charAt(0).toUpperCase() + project.healthStatus.slice(1)}
+              {/* Health Status + Hint */}
+              <div className="flex flex-col items-end gap-1">
+                <div className={`px-3 py-1 rounded-full text-sm font-medium flex items-center ${getHealthStatusColor(project.healthStatus)}`}>
+                  <span className="mr-1">{getHealthStatusIcon(project.healthStatus)}</span>
+                  {project.healthStatus.charAt(0).toUpperCase() + project.healthStatus.slice(1)}
+                </div>
+                <div className="text-xs text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">View Details →</div>
               </div>
             </div>
 
