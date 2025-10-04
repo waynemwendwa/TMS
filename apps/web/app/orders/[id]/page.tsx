@@ -74,17 +74,6 @@ export default function OrderDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  useEffect(() => {
-    const token = localStorage.getItem('tms_token');
-    if (!token) {
-      router.push('/auth/login');
-      return;
-    }
-
-    fetchUserData();
-    fetchOrder();
-  }, [router, orderId, fetchUserData, fetchOrder]);
-
   const fetchUserData = useCallback(async () => {
     try {
       const token = localStorage.getItem('tms_token');
@@ -128,6 +117,17 @@ export default function OrderDetailPage() {
       setLoading(false);
     }
   }, [orderId]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('tms_token');
+    if (!token) {
+      router.push('/auth/login');
+      return;
+    }
+
+    fetchUserData();
+    fetchOrder();
+  }, [router, orderId, fetchUserData, fetchOrder]);
 
   const handleAction = async (action: string, data?: { approved?: boolean }) => {
     setActionLoading(action);

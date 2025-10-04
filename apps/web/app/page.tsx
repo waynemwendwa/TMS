@@ -160,7 +160,7 @@ export default function Home() {
 
   // If user is logged in, show role-based dashboard
   if (user) {
-    return <RoleBasedDashboard user={user} inventoryStats={inventoryStats} projectStats={projectStats} inventoryCategoryCounts={inventoryCategoryCounts} />;
+    return <RoleBasedDashboard user={user} projectStats={projectStats} inventoryCategoryCounts={inventoryCategoryCounts} />;
   }
 
   // Landing page for non-logged-in users
@@ -269,7 +269,7 @@ export default function Home() {
 }
 
 // Role-based Dashboard Router
-function RoleBasedDashboard({ user, inventoryStats, projectStats, inventoryCategoryCounts }: { user: any, inventoryStats: any, projectStats: any, inventoryCategoryCounts: any }) {
+function RoleBasedDashboard({ user, projectStats, inventoryCategoryCounts }: { user: any, projectStats: any, inventoryCategoryCounts: any }) {
   if (user.role === 'SITE_SUPERVISOR') {
     return <SiteSupervisorDashboard user={user} projectStats={projectStats} />;
   }
