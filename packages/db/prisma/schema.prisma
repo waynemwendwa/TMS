@@ -150,9 +150,9 @@ model Project {
   projectPhases      ProjectPhase[]
   boqTemplates       BoqTemplate[]
   orderTemplates     OrderTemplate[]
+  orders             Order[]
   supervisorAssignments SiteSupervisorAssignment[]
   createdByUser      User @relation(fields: [createdBy], references: [id])
-  orders             Order[]
 
   @@map("projects")
 }
