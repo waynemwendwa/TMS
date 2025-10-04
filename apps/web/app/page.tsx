@@ -74,7 +74,7 @@ export default function Home() {
           const docs = await res.json();
           if (isMounted) setInventoryCategoryCounts(prev => ({ ...prev, documents: Array.isArray(docs) ? docs.length : 0 }));
         }
-      } catch (e) {
+      } catch {
         // ignore
       }
     };
@@ -97,7 +97,7 @@ export default function Home() {
         );
         const count = results.reduce((a, b) => a + b, 0);
         if (isMounted) setInventoryCategoryCounts(prev => ({ ...prev, ordersReceipts: count }));
-      } catch (e) {
+      } catch {
         // ignore
       }
     };
@@ -275,7 +275,7 @@ function RoleBasedDashboard({ user, inventoryStats, projectStats, inventoryCateg
   }
 
   // Full access for Chairman and Chairman's PA; others fall back to full dashboard for now
-  return <TMSDashboard user={user} inventoryStats={inventoryStats} projectStats={projectStats} inventoryCategoryCounts={inventoryCategoryCounts} />;
+  return <TMSDashboard user={user} projectStats={projectStats} inventoryCategoryCounts={inventoryCategoryCounts} />;
 }
 
 // Limited dashboard for Site Supervisors (will refine based on your specs)
@@ -356,7 +356,7 @@ function SiteSupervisorDashboard({ user, projectStats }: { user: any, projectSta
 }
 
 // TMS Dashboard Component
-function TMSDashboard({ user, inventoryStats, projectStats, inventoryCategoryCounts }: { user: any, inventoryStats: any, projectStats: any, inventoryCategoryCounts: any }) {
+function TMSDashboard({ user, projectStats, inventoryCategoryCounts }: { user: any, projectStats: any, inventoryCategoryCounts: any }) {
   return (
     <div className="space-y-6">
       {/* Welcome Header */}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface User {
@@ -103,9 +103,9 @@ export default function OrdersPage() {
     fetchUserData();
     fetchOrders();
     fetchProjects();
-  }, [router]);
+  }, [router, fetchUserData]);
 
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
     try {
       const token = localStorage.getItem('tms_token');
       const response = await fetch('/api/auth/me', {
@@ -122,7 +122,7 @@ export default function OrdersPage() {
       console.error('Error fetching user data:', error);
       router.push('/auth/login');
     }
-  };
+  }, [router]);
 
   const fetchOrders = async () => {
     try {

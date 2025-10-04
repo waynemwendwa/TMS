@@ -1232,7 +1232,7 @@ export default function ProjectDetailsPage() {
         const err = await res.json().catch(() => ({}));
         setStakeholderError(err.error || 'Failed to delete stakeholder');
       }
-    } catch (e) {
+    } catch {
       setStakeholderError('Failed to delete stakeholder');
     } finally {
       setDeletingStakeholderId(null);
