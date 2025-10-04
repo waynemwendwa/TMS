@@ -144,11 +144,11 @@ export const requestLogger = (req: Request, res: Response, next: Function) => {
   const start = Date.now();
   
   // Override res.end to capture response time
-  const originalEnd = res.end;
-  res.end = function(chunk?: any, encoding?: any) {
+  const originalEnd = res.end.bind(res);
+  res.end = function(chunk?: any, encoding?: any, cb?: any) {
     const responseTime = Date.now() - start;
     Logger.logRequest(req, res, responseTime);
-    originalEnd.call(this, chunk, encoding);
+    return originalEnd(chunk, encoding, cb);
   };
   
   next();

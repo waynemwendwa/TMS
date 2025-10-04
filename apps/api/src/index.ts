@@ -61,7 +61,7 @@ app.use(requestLogger);
 
 // Disable Prisma query logging in production to reduce noise
 if (process.env.NODE_ENV === 'development') {
-  prisma.$on('query', prismaLogger.log);
+  (prisma as any).$on('query', prismaLogger.log);
 }
 
 app.use('/api', health);
