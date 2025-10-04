@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { getApiUrl } from '../../../lib/config';
 
 interface User {
   id: string;
@@ -77,7 +78,7 @@ export default function OrderDetailPage() {
   const fetchUserData = useCallback(async () => {
     try {
       const token = localStorage.getItem('tms_token');
-      const response = await fetch('/api/auth/me', {
+      const response = await fetch(getApiUrl('/api/auth/me'), {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -96,7 +97,7 @@ export default function OrderDetailPage() {
   const fetchOrder = useCallback(async () => {
     try {
       const token = localStorage.getItem('tms_token');
-      const response = await fetch(`/api/orders/${orderId}`, {
+      const response = await fetch(getApiUrl(`/api/orders/${orderId}`), {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -133,7 +134,7 @@ export default function OrderDetailPage() {
     setActionLoading(action);
     try {
       const token = localStorage.getItem('tms_token');
-      const response = await fetch(`/api/orders/${orderId}/${action}`, {
+      const response = await fetch(getApiUrl(`/api/orders/${orderId}/${action}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
