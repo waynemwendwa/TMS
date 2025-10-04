@@ -93,18 +93,6 @@ export default function OrdersPage() {
     { itemCode: '', description: '', unit: 'units', quantity: 1, unitPrice: 0, totalPrice: 0, remarks: '' }
   ]);
 
-  useEffect(() => {
-    const token = localStorage.getItem('tms_token');
-    if (!token) {
-      router.push('/auth/login');
-      return;
-    }
-
-    fetchUserData();
-    fetchOrders();
-    fetchProjects();
-  }, [router, fetchUserData]);
-
   const fetchUserData = useCallback(async () => {
     try {
       const token = localStorage.getItem('tms_token');
@@ -123,6 +111,18 @@ export default function OrdersPage() {
       router.push('/auth/login');
     }
   }, [router]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('tms_token');
+    if (!token) {
+      router.push('/auth/login');
+      return;
+    }
+
+    fetchUserData();
+    fetchOrders();
+    fetchProjects();
+  }, [router, fetchUserData]);
 
   const fetchOrders = async () => {
     try {

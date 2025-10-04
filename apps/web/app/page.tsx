@@ -7,11 +7,6 @@ import ProjectAnalytics from "./components/ProjectAnalytics";
 
 export default function Home() {
   const [user, setUser] = useState<{ id: string; email: string; name: string; role: string } | null>(null);
-  const [inventoryStats, setInventoryStats] = useState({
-    totalItems: 0,
-    lowStockItems: 0,
-    outOfStockItems: 0
-  });
   const [projectStats, setProjectStats] = useState({
     totalProjects: 0,
     toStartProjects: 0,
@@ -54,10 +49,7 @@ export default function Home() {
         if (res.ok) {
           const data = await res.json();
           const totalItems = data.length;
-          const lowStockItems = data.filter((item: any) => item.currentStock <= item.minStock && item.currentStock > 0).length;
-          const outOfStockItems = data.filter((item: any) => item.currentStock === 0).length;
           if (isMounted) {
-            setInventoryStats({ totalItems, lowStockItems, outOfStockItems });
             // equipment count mirrors total inventory items
             setInventoryCategoryCounts(prev => ({ ...prev, equipment: totalItems }));
           }
