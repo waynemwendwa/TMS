@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import { prisma } from '@tms/db/client';
+import { Logger, requestLogger, prismaLogger } from './utils/logger.js';
 import health from './routes/health.js';
 import auth from './routes/auth.js';
 import inventory from './routes/inventory.js';
@@ -54,7 +55,14 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 app.use(express.json());
-app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+
+// Use custom request logger instead of morgan
+app.use(requestLogger);
+
+// Disable Prisma query logging in production to reduce noise
+if (process.env.NODE_ENV === 'development') {
+  prisma.$on('query', prismaLogger.log);
+}
 
 app.use('/api', health);
 app.use('/api/auth', auth);
@@ -67,32 +75,32 @@ const port = Number(process.env.PORT) || 4000;
 const host = '0.0.0.0';
 
 app.listen(port, host, async () => {
-	console.log(`🚀 API server running on ${host}:${port}`);
-	console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-	console.log(`🗄️ Database URL: ${process.env.DATABASE_URL ? 'Set' : 'Not set'}`);
+	Logger.info(`🚀 API server running on ${host}:${port}`);
+	Logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+	Logger.info(`🗄️ Database URL: ${process.env.DATABASE_URL ? 'Set' : 'Not set'}`);
 	
 	// Test database connection and verify tables exist
 	try {
 		await prisma.$connect();
-		console.log('✅ Database connected successfully');
+		Logger.info('✅ Database connected successfully');
 		
 		// Test if tables exist by running a simple query
 		const userCount = await prisma.user.count();
-		console.log(`📊 Database tables verified - Users table exists (${userCount} users)`);
+		Logger.info(`📊 Database tables verified - Users table exists (${userCount} users)`);
 		
 		// Test if FINANCE_PROCUREMENT role is available (without creating a user)
 		try {
 			// Just test if the enum value is valid by checking the schema
 			await prisma.$queryRaw`SELECT unnest(enum_range(NULL::"UserRole")) as role`;
-			console.log('✅ UserRole enum is available');
-			console.log('✅ FINANCE_PROCUREMENT role should be available');
+			Logger.info('✅ UserRole enum is available');
+			Logger.info('✅ FINANCE_PROCUREMENT role should be available');
 		} catch (roleError) {
-			console.log('⚠️ Role enum test failed:', roleError instanceof Error ? roleError.message : 'Unknown error');
+			Logger.warn('⚠️ Role enum test failed:', { error: roleError instanceof Error ? roleError.message : 'Unknown error' });
 		}
 		
-		console.log('🎉 Database is fully ready and operational!');
+		Logger.info('🎉 Database is fully ready and operational!');
 	} catch (error) {
-		console.error('❌ Database connection failed:', error);
-		console.error('❌ This usually means the database migration did not run properly');
+		Logger.error('❌ Database connection failed:', { error: error instanceof Error ? error.message : 'Unknown error' });
+		Logger.error('❌ This usually means the database migration did not run properly');
 	}
 });

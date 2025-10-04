@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '@tms/db/client';
 import { requireAuth } from '../middleware/auth.js';
+import { Logger } from '../utils/logger.js';
 
 const router = Router();
 
@@ -62,9 +63,10 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
       orderBy: { createdAt: 'desc' }
     });
 
+    Logger.logBusiness('Orders fetched', { count: orders.length, userRole: user.role });
     res.json(orders);
   } catch (error) {
-    console.error('Error fetching orders:', error);
+    Logger.logError(error as Error, 'fetchOrders');
     res.status(500).json({ error: 'Failed to fetch orders' });
   }
 });
@@ -112,9 +114,10 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
+    Logger.logBusiness('Order fetched', { orderId: id, userRole: user.role });
     res.json(order);
   } catch (error) {
-    console.error('Error fetching order:', error);
+    Logger.logError(error as Error, 'fetchOrder');
     res.status(500).json({ error: 'Failed to fetch order' });
   }
 });
@@ -200,9 +203,10 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
       }
     });
 
+    Logger.logBusiness('Order created', { orderId: order.id, orderNumber: order.orderNumber, projectId: projectId, userId: user.id });
     res.status(201).json(completeOrder);
   } catch (error) {
-    console.error('Error creating order:', error);
+    Logger.logError(error as Error, 'createOrder');
     res.status(500).json({ error: 'Failed to create order' });
   }
 });
