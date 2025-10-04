@@ -92,13 +92,15 @@ export default function UserNav() {
       case 'SITE_SUPERVISOR':
         return [
           { href: '/projects', label: 'Projects' },
-          // Directly link to inventory orders tab for supervisors
-          { href: '/inventory?tab=orders', label: 'Orders' }
+          { href: '/orders', label: 'Orders' }
         ];
       
       case 'PROCUREMENT':
       case 'FINANCE_PROCUREMENT':
-        return baseItems;
+        return [
+          ...baseItems,
+          { href: '/orders', label: 'Orders' }
+        ];
       
       case 'SUPPLIER':
         return [
@@ -107,7 +109,10 @@ export default function UserNav() {
       
       case 'CHAIRMAN':
       case 'CHAIRMAN_PA':
-        return baseItems;
+        return [
+          ...baseItems,
+          { href: '/orders', label: 'Orders' }
+        ];
       
       default:
         return baseItems;

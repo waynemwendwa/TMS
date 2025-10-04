@@ -25,13 +25,18 @@ type ProjectDocument = {
     | "CONTRACT_SIGNING"
     | "BOQ_DOCUMENT"
     | "SAMPLE_APPROVAL"
+    | "DESIGN_DRAWING"
+    | "WORKING_DRAWING"
+    | "AS_INSTALLED_DRAWING"
+    | "INTERIM_PAYMENT"
+    | "FINAL_ACCOUNT"
     | "OTHER";
   type: string;
   size: number;
   url: string;
   filePath: string;
   uploadedAt: string;
-  documentType: string; // "preliminary" | "boq"
+  documentType: string; // "preliminary" | "boq" | "payment" | "drawing"
 };
 
 type ProcurementStatus = "PENDING" | "QUOTED" | "APPROVED" | "ORDERED" | "DELIVERED";
@@ -216,6 +221,45 @@ export default function ProjectDetailsPage() {
   const [phaseStatusFilter, setPhaseStatusFilter] = useState<'ALL' | PhaseStatus>('ALL');
   const [updatingPhaseId, setUpdatingPhaseId] = useState<string | null>(null);
 
+  // Helper function to format category names for display
+  const formatCategoryName = (category: string) => {
+    const categoryMap: Record<string, string> = {
+      'LETTER_OF_AWARD': 'Letter of Award',
+      'ACCEPTANCE_OF_AWARD': 'Acceptance of Award',
+      'PERFORMANCE_BOND': 'Performance Bond',
+      'CONTRACT_SIGNING': 'Contract Signing',
+      'BOQ_DOCUMENT': 'BOQ Document',
+      'SAMPLE_APPROVAL': 'Sample Approval',
+      'DESIGN_DRAWING': 'Design Drawing',
+      'WORKING_DRAWING': 'Working Drawing',
+      'AS_INSTALLED_DRAWING': 'As Installed Drawing',
+      'INTERIM_PAYMENT': 'Interim Payment',
+      'FINAL_ACCOUNT': 'Final Account',
+      'OTHER': 'Other'
+    };
+    return categoryMap[category] || category;
+  };
+
+  // Payment Documents state
+  const [paymentDocs, setPaymentDocs] = useState<ProjectDocument[]>([]);
+  const [paymentFiles, setPaymentFiles] = useState<FileList | null>(null);
+  const [paymentUploading, setPaymentUploading] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [paymentSuccess, setPaymentSuccess] = useState<string | null>(null);
+  const [paymentName, setPaymentName] = useState("");
+  const [paymentDescription, setPaymentDescription] = useState("");
+  const [paymentCategory, setPaymentCategory] = useState<"INTERIM_PAYMENT" | "FINAL_ACCOUNT">("INTERIM_PAYMENT");
+
+  // Drawings Documents state
+  const [drawingDocs, setDrawingDocs] = useState<ProjectDocument[]>([]);
+  const [drawingFiles, setDrawingFiles] = useState<FileList | null>(null);
+  const [drawingUploading, setDrawingUploading] = useState(false);
+  const [drawingError, setDrawingError] = useState<string | null>(null);
+  const [drawingSuccess, setDrawingSuccess] = useState<string | null>(null);
+  const [drawingName, setDrawingName] = useState("");
+  const [drawingDescription, setDrawingDescription] = useState("");
+  const [drawingCategory, setDrawingCategory] = useState<"DESIGN_DRAWING" | "WORKING_DRAWING" | "AS_INSTALLED_DRAWING">("DESIGN_DRAWING");
+
   useEffect(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("tms_token") : null;
     if (!projectId || !token) return;
@@ -227,7 +271,7 @@ export default function ProjectDetailsPage() {
         const tokenHeader = { headers: { Authorization: `Bearer ${token}` } } as const;
         
         // Fetch all data including documents
-        const [projRes, docsRes, boqRes, procsRes, phasesRes, boqTemplatesRes, orderTemplatesRes, userRes] = await Promise.all([
+        const [projRes, docsRes, boqRes, procsRes, phasesRes, boqTemplatesRes, orderTemplatesRes, userRes, paymentRes, drawingRes] = await Promise.all([
           fetch(getApiUrl(`/api/projects/${projectId}`), {
             ...tokenHeader
           }),
@@ -250,6 +294,12 @@ export default function ProjectDetailsPage() {
             ...tokenHeader
           }),
           fetch(getApiUrl(`/api/auth/me`), {
+            ...tokenHeader
+          }),
+          fetch(getApiUrl(`/api/projects/${projectId}/documents?documentType=payment`), {
+            ...tokenHeader
+          }),
+          fetch(getApiUrl(`/api/projects/${projectId}/documents?documentType=drawing`), {
             ...tokenHeader
           })
         ]);
@@ -282,6 +332,12 @@ export default function ProjectDetailsPage() {
         }
         if (userRes.ok) {
           setUser(await userRes.json());
+        }
+        if (paymentRes.ok) {
+          setPaymentDocs(await paymentRes.json());
+        }
+        if (drawingRes.ok) {
+          setDrawingDocs(await drawingRes.json());
         }
       } catch (err) {
         console.error("Error loading project:", err);
@@ -425,9 +481,29 @@ export default function ProjectDetailsPage() {
         setBoqDocs(boqData);
       }
 
+      // Refresh payment documents
+      const paymentResponse = await fetch(getApiUrl(`/api/projects/${projectId}/documents?documentType=payment`), {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (paymentResponse.ok) {
+        const paymentData = await paymentResponse.json();
+        setPaymentDocs(paymentData);
+      }
+
+      // Refresh drawing documents
+      const drawingResponse = await fetch(getApiUrl(`/api/projects/${projectId}/documents?documentType=drawing`), {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (drawingResponse.ok) {
+        const drawingData = await drawingResponse.json();
+        setDrawingDocs(drawingData);
+      }
+
       // Show success message
       setPrelimSuccess('Document lists refreshed successfully!');
       setBoqSuccess('Document lists refreshed successfully!');
+      setPaymentSuccess('Document lists refreshed successfully!');
+      setDrawingSuccess('Document lists refreshed successfully!');
     } catch (error) {
       console.error('Error refreshing document lists:', error);
     }
@@ -521,6 +597,96 @@ export default function ProjectDetailsPage() {
     } catch (error) {
       console.error('Error deleting BOQ document:', error);
       setBoqError(`Error deleting document: ${error instanceof Error ? error.message : 'Please try again.'}`);
+    }
+  };
+
+  const handleDeletePaymentDocument = async (doc: ProjectDocument) => {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('tms_token') : null;
+      if (!token) {
+        alert('Please log in to delete documents');
+        return;
+      }
+
+      if (confirm('Are you sure you want to delete this payment document?')) {
+        console.log('🗑️ Deleting payment document:', doc.id, doc.name);
+        
+        // Optimistically remove from frontend state
+        setPaymentDocs(prev => prev.filter(d => d.id !== doc.id));
+        setPaymentError(null);
+        setPaymentSuccess(null);
+        
+        try {
+          const response = await fetch(getApiUrl(`/api/projects/${projectId}/documents/${doc.id}`), {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (response.ok) {
+            setPaymentSuccess('Payment document deleted successfully!');
+          } else {
+            const errorData = await response.json().catch(() => ({}));
+            // Add the document back to frontend if deletion failed
+            setPaymentDocs(prev => [...prev, doc]);
+            setPaymentError(errorData.error || 'Failed to delete document');
+          }
+        } catch (error) {
+          // Add the document back to frontend if request failed
+          setPaymentDocs(prev => [...prev, doc]);
+          setPaymentError('Failed to delete document. Please try again.');
+          console.error('Error deleting payment document:', error);
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting payment document:', error);
+      setPaymentError(`Error deleting document: ${error instanceof Error ? error.message : 'Please try again.'}`);
+    }
+  };
+
+  const handleDeleteDrawingDocument = async (doc: ProjectDocument) => {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('tms_token') : null;
+      if (!token) {
+        alert('Please log in to delete documents');
+        return;
+      }
+
+      if (confirm('Are you sure you want to delete this drawing document?')) {
+        console.log('🗑️ Deleting drawing document:', doc.id, doc.name);
+        
+        // Optimistically remove from frontend state
+        setDrawingDocs(prev => prev.filter(d => d.id !== doc.id));
+        setDrawingError(null);
+        setDrawingSuccess(null);
+        
+        try {
+          const response = await fetch(getApiUrl(`/api/projects/${projectId}/documents/${doc.id}`), {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (response.ok) {
+            setDrawingSuccess('Drawing document deleted successfully!');
+          } else {
+            const errorData = await response.json().catch(() => ({}));
+            // Add the document back to frontend if deletion failed
+            setDrawingDocs(prev => [...prev, doc]);
+            setDrawingError(errorData.error || 'Failed to delete document');
+          }
+        } catch (error) {
+          // Add the document back to frontend if request failed
+          setDrawingDocs(prev => [...prev, doc]);
+          setDrawingError('Failed to delete document. Please try again.');
+          console.error('Error deleting drawing document:', error);
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting drawing document:', error);
+      setDrawingError(`Error deleting document: ${error instanceof Error ? error.message : 'Please try again.'}`);
     }
   };
 
@@ -881,6 +1047,122 @@ export default function ProjectDetailsPage() {
       }
     } finally {
       setOrderUploading(false);
+    }
+  };
+
+  const onUploadPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPaymentError(null);
+    setPaymentSuccess(null);
+    if (!paymentFiles || paymentFiles.length === 0) {
+      setPaymentError('Please choose at least one file.');
+      return;
+    }
+    // Client-side file validation
+    const allowed = ['pdf','doc','docx','jpg','jpeg','png','xls','xlsx'];
+    for (const f of Array.from(paymentFiles)) {
+      const ext = f.name.split('.').pop()?.toLowerCase();
+      if (!ext || !allowed.includes(ext)) {
+        setPaymentError('Only PDF, DOC, DOCX, JPG, JPEG, PNG, XLS, and XLSX files are allowed.');
+        return;
+      }
+      if (f.size > 20 * 1024 * 1024) {
+        setPaymentError('Each file must be 20MB or less.');
+        return;
+      }
+    }
+    const token = typeof window !== "undefined" ? localStorage.getItem("tms_token") : null;
+    if (!token) return;
+
+    try {
+      setPaymentUploading(true);
+      const form = new FormData();
+      Array.from(paymentFiles).forEach((f) => form.append("documents", f));
+      form.append("documentType", "payment");
+      form.append("category", paymentCategory);
+      if (paymentName) form.append("name", paymentName);
+      if (paymentDescription) form.append("description", paymentDescription);
+
+      const res = await fetch(getApiUrl(`/api/projects/${projectId}/documents`), {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: form
+      });
+      if (res.ok) {
+        const uploaded = (await res.json()) as ProjectDocument[];
+        console.log('📤 Payment documents uploaded:', uploaded.length);
+        setPaymentDocs((prev) => [...uploaded, ...prev]);
+        setPaymentFiles(null);
+        setPaymentName("");
+        setPaymentDescription("");
+        setPaymentCategory("INTERIM_PAYMENT");
+        setPaymentSuccess('Payment documents uploaded successfully.');
+      } else {
+        const msg = await res.text();
+        setPaymentError(msg || 'Upload failed.');
+      }
+    } catch {
+      setPaymentError('Upload failed. Please try again.');
+    } finally {
+      setPaymentUploading(false);
+    }
+  };
+
+  const onUploadDrawing = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDrawingError(null);
+    setDrawingSuccess(null);
+    if (!drawingFiles || drawingFiles.length === 0) {
+      setDrawingError('Please choose at least one file.');
+      return;
+    }
+    // Client-side file validation
+    const allowed = ['pdf','doc','docx','jpg','jpeg','png','xls','xlsx'];
+    for (const f of Array.from(drawingFiles)) {
+      const ext = f.name.split('.').pop()?.toLowerCase();
+      if (!ext || !allowed.includes(ext)) {
+        setDrawingError('Only PDF, DOC, DOCX, JPG, JPEG, PNG, XLS, and XLSX files are allowed.');
+        return;
+      }
+      if (f.size > 20 * 1024 * 1024) {
+        setDrawingError('Each file must be 20MB or less.');
+        return;
+      }
+    }
+    const token = typeof window !== "undefined" ? localStorage.getItem("tms_token") : null;
+    if (!token) return;
+
+    try {
+      setDrawingUploading(true);
+      const form = new FormData();
+      Array.from(drawingFiles).forEach((f) => form.append("documents", f));
+      form.append("documentType", "drawing");
+      form.append("category", drawingCategory);
+      if (drawingName) form.append("name", drawingName);
+      if (drawingDescription) form.append("description", drawingDescription);
+
+      const res = await fetch(getApiUrl(`/api/projects/${projectId}/documents`), {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: form
+      });
+      if (res.ok) {
+        const uploaded = (await res.json()) as ProjectDocument[];
+        console.log('📤 Drawing documents uploaded:', uploaded.length);
+        setDrawingDocs((prev) => [...uploaded, ...prev]);
+        setDrawingFiles(null);
+        setDrawingName("");
+        setDrawingDescription("");
+        setDrawingCategory("DESIGN_DRAWING");
+        setDrawingSuccess('Drawing documents uploaded successfully.');
+      } else {
+        const msg = await res.text();
+        setDrawingError(msg || 'Upload failed.');
+      }
+    } catch {
+      setDrawingError('Upload failed. Please try again.');
+    } finally {
+      setDrawingUploading(false);
     }
   };
 
@@ -1856,6 +2138,191 @@ export default function ProjectDetailsPage() {
         </div>
       </div>
       )}
+
+      {/* Payment Documents - Hidden for Site Supervisors */}
+      {user?.role !== 'SITE_SUPERVISOR' && (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Payment Documents Upload */}
+        <div className="bg-white rounded-lg shadow p-5 lg:col-span-1">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Payment Documents</h2>
+          <form onSubmit={onUploadPayment} className="space-y-3">
+            <div>
+              <label className="block text-sm text-gray-700 mb-1">Category *</label>
+              <select
+                className="w-full text-gray-900 border rounded-md px-3 py-2"
+                value={paymentCategory}
+                onChange={(e) => setPaymentCategory(e.target.value as "INTERIM_PAYMENT" | "FINAL_ACCOUNT")}
+              >
+                <option value="INTERIM_PAYMENT">Interim Payment</option>
+                <option value="FINAL_ACCOUNT">Final Account</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-gray-700 mb-1">Name (optional)</label>
+              <input className="w-full text-gray-900 border rounded-md px-3 py-2" value={paymentName} onChange={(e) => setPaymentName(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-700 mb-1">Description (optional)</label>
+              <textarea className="w-full text-gray-900 border rounded-md px-3 py-2" rows={2} value={paymentDescription} onChange={(e) => setPaymentDescription(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-700 mb-1">Files</label>
+              <input
+                type="file"
+                multiple
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx"
+                onChange={(e) => setPaymentFiles(e.target.files)}
+                className="w-full text-gray-900"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={paymentUploading || !paymentFiles || paymentFiles.length === 0}
+              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors disabled:opacity-60"
+            >
+              {paymentUploading ? "Uploading..." : "Upload Payment Documents"}
+            </button>
+          </form>
+        </div>
+
+        {/* Payment Documents List */}
+        <div className="bg-white rounded-lg shadow p-5 lg:col-span-2">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold text-gray-900">Uploaded Payment Documents</h2>
+            <button
+              onClick={refreshDocumentLists}
+              className="text-sm text-blue-600 hover:text-blue-800"
+            >
+              🔄 Refresh
+            </button>
+          </div>
+          {paymentError && <div className="mb-3 text-sm text-red-600">{paymentError}</div>}
+          {paymentSuccess && <div className="mb-3 text-sm text-green-700">{paymentSuccess}</div>}
+          {paymentDocs.length === 0 ? (
+            <div className="text-sm text-gray-500">No payment documents uploaded yet.</div>
+          ) : (
+            <div className="space-y-3">
+              {paymentDocs.map((doc) => (
+                <div key={doc.id} className="flex items-center justify-between p-3 border rounded-md">
+                  <div>
+                    <div className="font-medium text-gray-900">{doc.name}</div>
+                    <div className="text-xs text-gray-500">{formatCategoryName(doc.category)} • {new Date(doc.uploadedAt).toLocaleString()}</div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <a
+                      href={`${getApiUrl('/api/upload/view')}?filePath=${encodeURIComponent(doc.filePath || doc.url)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-blue-600 hover:text-blue-800 text-sm"
+                    >
+                      View
+                    </a>
+                    <button
+                      onClick={() => handleDeletePaymentDocument(doc)}
+                      className="text-red-600 hover:text-red-800 text-sm"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      )}
+
+      {/* Drawings Documents - Visible to all users */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Drawings Upload */}
+        <div className="bg-white rounded-lg shadow p-5 lg:col-span-1">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Drawings</h2>
+          <form onSubmit={onUploadDrawing} className="space-y-3">
+            <div>
+              <label className="block text-sm text-gray-700 mb-1">Category *</label>
+              <select
+                className="w-full text-gray-900 border rounded-md px-3 py-2"
+                value={drawingCategory}
+                onChange={(e) => setDrawingCategory(e.target.value as "DESIGN_DRAWING" | "WORKING_DRAWING" | "AS_INSTALLED_DRAWING")}
+              >
+                <option value="DESIGN_DRAWING">Design Drawing</option>
+                <option value="WORKING_DRAWING">Working Drawing</option>
+                <option value="AS_INSTALLED_DRAWING">As Installed Drawing</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-gray-700 mb-1">Name (optional)</label>
+              <input className="w-full text-gray-900 border rounded-md px-3 py-2" value={drawingName} onChange={(e) => setDrawingName(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-700 mb-1">Description (optional)</label>
+              <textarea className="w-full text-gray-900 border rounded-md px-3 py-2" rows={2} value={drawingDescription} onChange={(e) => setDrawingDescription(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-700 mb-1">Files</label>
+              <input
+                type="file"
+                multiple
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx"
+                onChange={(e) => setDrawingFiles(e.target.files)}
+                className="w-full text-gray-900"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={drawingUploading || !drawingFiles || drawingFiles.length === 0}
+              className="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition-colors disabled:opacity-60"
+            >
+              {drawingUploading ? "Uploading..." : "Upload Drawings"}
+            </button>
+          </form>
+        </div>
+
+        {/* Drawings List */}
+        <div className="bg-white rounded-lg shadow p-5 lg:col-span-2">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold text-gray-900">Uploaded Drawings</h2>
+            <button
+              onClick={refreshDocumentLists}
+              className="text-sm text-blue-600 hover:text-blue-800"
+            >
+              🔄 Refresh
+            </button>
+          </div>
+          {drawingError && <div className="mb-3 text-sm text-red-600">{drawingError}</div>}
+          {drawingSuccess && <div className="mb-3 text-sm text-green-700">{drawingSuccess}</div>}
+          {drawingDocs.length === 0 ? (
+            <div className="text-sm text-gray-500">No drawings uploaded yet.</div>
+          ) : (
+            <div className="space-y-3">
+              {drawingDocs.map((doc) => (
+                <div key={doc.id} className="flex items-center justify-between p-3 border rounded-md">
+                  <div>
+                    <div className="font-medium text-gray-900">{doc.name}</div>
+                    <div className="text-xs text-gray-500">{formatCategoryName(doc.category)} • {new Date(doc.uploadedAt).toLocaleString()}</div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <a
+                      href={`${getApiUrl('/api/upload/view')}?filePath=${encodeURIComponent(doc.filePath || doc.url)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-blue-600 hover:text-blue-800 text-sm"
+                    >
+                      View
+                    </a>
+                    <button
+                      onClick={() => handleDeleteDrawingDocument(doc)}
+                      className="text-red-600 hover:text-red-800 text-sm"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Stakeholder Details Modal */}
       {showStakeholderModal && selectedStakeholder && (

@@ -26,6 +26,12 @@ model User {
   createdBoqTemplates BoqTemplate[]
   createdOrderTemplates OrderTemplate[]
   supervisorAssignments SiteSupervisorAssignment[]
+  
+  // Order workflow relations
+  requestedOrders        Order[] @relation("RequestedBy")
+  procurementApprovedOrders Order[] @relation("ProcurementApprover")
+  chairmanApprovedOrders    Order[] @relation("ChairmanApprover")
+  procurementSourcedOrders  Order[] @relation("ProcurementSourcer")
 
   @@map("users")
 }
@@ -56,6 +62,7 @@ model Inventory {
 
   // Relations
   logs        InventoryLog[]
+  orders      Order[]
 
   @@map("inventory")
 }
@@ -145,6 +152,7 @@ model Project {
   orderTemplates     OrderTemplate[]
   supervisorAssignments SiteSupervisorAssignment[]
   createdByUser      User @relation(fields: [createdBy], references: [id])
+  orders             Order[]
 
   @@map("projects")
 }
@@ -354,4 +362,183 @@ model OrderTemplateItem {
   orderTemplate   OrderTemplate @relation(fields: [orderTemplateId], references: [id], onDelete: Cascade)
 
   @@map("order_template_items")
+}
+
+// Order Management with Approval Workflow
+model Order {
+  id            String      @id @default(cuid())
+  orderNumber   String      @unique
+  title         String
+  description   String?
+  status        OrderStatus @default(PENDING_PROCUREMENT)
+  orderDate     DateTime    @default(now())
+  requiredDate  DateTime?
+  totalAmount   Decimal?    @db.Decimal(15, 2)
+  remarks       String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  projectId     String
+  requestedById String
+  inventoryId   String?
+
+  // Approval workflow fields
+  procurementApprovedAt DateTime?
+  procurementApprovedBy String?
+  chairmanApprovedAt    DateTime?
+  chairmanApprovedBy    String?
+  procurementSourcedAt  DateTime?
+  procurementSourcedBy  String?
+
+  // Relations
+  project           Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  requestedBy       User        @relation("RequestedBy", fields: [requestedById], references: [id])
+  inventory         Inventory?  @relation(fields: [inventoryId], references: [id])
+  procurementApprover User?     @relation("ProcurementApprover", fields: [procurementApprovedBy], references: [id])
+  chairmanApprover    User?     @relation("ChairmanApprover", fields: [chairmanApprovedBy], references: [id])
+  procurementSourcer  User?     @relation("ProcurementSourcer", fields: [procurementSourcedBy], references: [id])
+  items             OrderItem[]
+  deliveries        Delivery[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  itemCode    String
+  description String
+  unit        String
+  quantity    Int
+  unitPrice   Decimal? @db.Decimal(15, 2)
+  totalPrice  Decimal? @db.Decimal(15, 2)
+  remarks     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  orderId     String
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
+}
+
+model Delivery {
+  id              String         @id @default(cuid())
+  deliveryNumber  String         @unique
+  orderId         String
+  supplierId      String
+  deliveryDate    DateTime       @default(now())
+  receivedDate    DateTime?
+  status          DeliveryStatus @default(PENDING)
+  remarks         String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relations
+  order     Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  supplier  Supplier         @relation(fields: [supplierId], references: [id])
+  documents DeliveryDocument[]
+
+  @@map("deliveries")
+}
+
+model DeliveryDocument {
+  id          String   @id @default(cuid())
+  deliveryId  String
+  name        String
+  type        String
+  size        Int
+  url         String
+  filePath    String
+  uploadedAt  DateTime @default(now())
+
+  // Relations
+  delivery Delivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+
+  @@map("delivery_documents")
+}
+
+model Supplier {
+  id          String   @id @default(cuid())
+  name        String
+  email       String?
+  phone       String?
+  address     String?
+  contactPerson String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  deliveries Delivery[]
+  quotes     Quote[]
+
+  @@map("suppliers")
+}
+
+model Quote {
+  id          String      @id @default(cuid())
+  quoteNumber String      @unique
+  title       String
+  description String?
+  totalAmount Decimal     @db.Decimal(15, 2)
+  validUntil  DateTime
+  status      QuoteStatus @default(DRAFT)
+  submittedAt DateTime    @default(now())
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  supplierId  String
+
+  // Relations
+  supplier Supplier      @relation(fields: [supplierId], references: [id])
+  items    QuoteItem[]
+
+  @@map("quotes")
+}
+
+model QuoteItem {
+  id          String   @id @default(cuid())
+  itemCode    String
+  description String
+  unit        String
+  quantity    Int
+  unitPrice   Decimal  @db.Decimal(15, 2)
+  totalPrice  Decimal  @db.Decimal(15, 2)
+  remarks     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  quoteId     String
+
+  // Relations
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@map("quote_items")
+}
+
+// Enums for Order Management
+enum OrderStatus {
+  PENDING_PROCUREMENT    // Order created by supervisor, waiting for procurement
+  PENDING_CHAIRMAN       // Procurement reviewed, waiting for chairman approval
+  APPROVED               // Chairman approved, ready for procurement to source
+  REJECTED               // Rejected by chairman
+  SOURCING               // Procurement is sourcing materials
+  SOURCED                // Materials sourced, ready for delivery
+  IN_PROGRESS            // Order in progress
+  COMPLETED              // Order completed
+  CANCELLED              // Order cancelled
+}
+
+enum DeliveryStatus {
+  PENDING
+  IN_TRANSIT
+  DELIVERED
+  RECEIVED
+  VERIFIED
+}
+
+enum QuoteStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  ACCEPTED
+  REJECTED
+  EXPIRED
 }
