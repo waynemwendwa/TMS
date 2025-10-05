@@ -2,40 +2,88 @@
 CREATE SCHEMA IF NOT EXISTS "public";
 
 -- CreateEnum
-CREATE TYPE "public"."UserRole" AS ENUM ('SITE_SUPERVISOR', 'PROCUREMENT', 'SUPPLIER', 'CHAIRMAN', 'CHAIRMAN_PA', 'FINANCE_PROCUREMENT');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'UserRole') THEN
+    CREATE TYPE "public"."UserRole" AS ENUM ('SITE_SUPERVISOR', 'PROCUREMENT', 'SUPPLIER', 'CHAIRMAN', 'CHAIRMAN_PA', 'FINANCE_PROCUREMENT');
+  END IF;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "public"."InventoryLogType" AS ENUM ('IN', 'OUT', 'ADJUSTMENT', 'TRANSFER');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'InventoryLogType') THEN
+    CREATE TYPE "public"."InventoryLogType" AS ENUM ('IN', 'OUT', 'ADJUSTMENT', 'TRANSFER');
+  END IF;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "public"."DocumentCategory" AS ENUM ('CONTRACTS', 'REPORTS', 'POLICIES', 'PROCEDURES', 'TEMPLATES', 'PROJECT_DOCUMENTS', 'BOQ_DOCUMENTS', 'OTHER');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'DocumentCategory') THEN
+    CREATE TYPE "public"."DocumentCategory" AS ENUM ('CONTRACTS', 'REPORTS', 'POLICIES', 'PROCEDURES', 'TEMPLATES', 'PROJECT_DOCUMENTS', 'BOQ_DOCUMENTS', 'OTHER');
+  END IF;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "public"."DocumentType" AS ENUM ('PDF', 'DOC', 'DOCX', 'JPG', 'JPEG', 'PNG');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'DocumentType') THEN
+    CREATE TYPE "public"."DocumentType" AS ENUM ('PDF', 'DOC', 'DOCX', 'JPG', 'JPEG', 'PNG');
+  END IF;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "public"."ProjectStatus" AS ENUM ('TO_START', 'ONGOING', 'COMPLETED');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ProjectStatus') THEN
+    CREATE TYPE "public"."ProjectStatus" AS ENUM ('TO_START', 'ONGOING', 'COMPLETED');
+  END IF;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "public"."ProjectDocumentCategory" AS ENUM ('LETTER_OF_AWARD', 'ACCEPTANCE_OF_AWARD', 'PERFORMANCE_BOND', 'CONTRACT_SIGNING', 'BOQ_DOCUMENT', 'SAMPLE_APPROVAL', 'OTHER');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ProjectDocumentCategory') THEN
+    CREATE TYPE "public"."ProjectDocumentCategory" AS ENUM ('LETTER_OF_AWARD', 'ACCEPTANCE_OF_AWARD', 'PERFORMANCE_BOND', 'CONTRACT_SIGNING', 'BOQ_DOCUMENT', 'SAMPLE_APPROVAL', 'OTHER');
+  END IF;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "public"."StakeholderRole" AS ENUM ('MAIN_CONTRACTOR', 'CLIENT', 'CONSULTANT', 'STRUCTURAL_ENGINEER', 'ARCHITECT', 'QUANTITY_SURVEYOR', 'SUB_CONTRACTOR', 'LAW_FIRM');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'StakeholderRole') THEN
+    CREATE TYPE "public"."StakeholderRole" AS ENUM ('MAIN_CONTRACTOR', 'CLIENT', 'CONSULTANT', 'STRUCTURAL_ENGINEER', 'ARCHITECT', 'QUANTITY_SURVEYOR', 'SUB_CONTRACTOR', 'LAW_FIRM');
+  END IF;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "public"."ProcurementStatus" AS ENUM ('PENDING', 'QUOTED', 'APPROVED', 'ORDERED', 'DELIVERED');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ProcurementStatus') THEN
+    CREATE TYPE "public"."ProcurementStatus" AS ENUM ('PENDING', 'QUOTED', 'APPROVED', 'ORDERED', 'DELIVERED');
+  END IF;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "public"."PhaseStatus" AS ENUM ('PLANNED', 'IN_PROGRESS', 'COMPLETED', 'DELAYED');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'PhaseStatus') THEN
+    CREATE TYPE "public"."PhaseStatus" AS ENUM ('PLANNED', 'IN_PROGRESS', 'COMPLETED', 'DELAYED');
+  END IF;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "public"."OrderStatus" AS ENUM ('PENDING_PROCUREMENT', 'PENDING_CHAIRMAN', 'APPROVED', 'REJECTED', 'SOURCING', 'SOURCED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'OrderStatus') THEN
+    CREATE TYPE "public"."OrderStatus" AS ENUM ('PENDING_PROCUREMENT', 'PENDING_CHAIRMAN', 'APPROVED', 'REJECTED', 'SOURCING', 'SOURCED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED');
+  END IF;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "public"."DeliveryStatus" AS ENUM ('PENDING', 'IN_TRANSIT', 'DELIVERED', 'RECEIVED', 'VERIFIED');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'DeliveryStatus') THEN
+    CREATE TYPE "public"."DeliveryStatus" AS ENUM ('PENDING', 'IN_TRANSIT', 'DELIVERED', 'RECEIVED', 'VERIFIED');
+  END IF;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "public"."QuoteStatus" AS ENUM ('DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'ACCEPTED', 'REJECTED', 'EXPIRED');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'QuoteStatus') THEN
+    CREATE TYPE "public"."QuoteStatus" AS ENUM ('DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'ACCEPTED', 'REJECTED', 'EXPIRED');
+  END IF;
+END $$;
 
 -- CreateTable
 CREATE TABLE "public"."users" (
