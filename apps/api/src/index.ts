@@ -120,7 +120,7 @@ app.listen(port, host, async () => {
 		// Orders table and migration diagnostics
 		try {
 			const [{ exists } = { exists: null }]: Array<{ exists: string | null } | undefined> = await prisma.$queryRaw`SELECT to_regclass('public.orders') as exists`;
-			const [{ count } = { count: 0 }]: Array<{ count: bigint } | undefined> = await prisma.$queryRaw`SELECT COUNT(*)::bigint AS count FROM "_prisma_migrations" WHERE migration_name LIKE '%add_approval_workflow%'`;
+			const [{ count } = { count: BigInt(0) }]: Array<{ count: bigint } | undefined> = await prisma.$queryRaw`SELECT COUNT(*)::bigint AS count FROM "_prisma_migrations" WHERE migration_name LIKE '%add_approval_workflow%'`;
 			Logger.info('🧪 Orders diagnostics', {
 				ordersTableExists: Boolean(exists),
 				approvalWorkflowMigrationCount: Number(count || 0)
