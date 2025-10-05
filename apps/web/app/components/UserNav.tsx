@@ -33,14 +33,17 @@ export default function UserNav() {
         if (res.ok) {
           const data = await res.json();
           setUser(data.user);
-        } else {
-          // Token is invalid, remove it
+        } else if (res.status === 401) {
+          // Only clear token if explicitly unauthorized
           localStorage.removeItem('tms_token');
+          setUser(null);
+        } else {
+          // Keep token; treat as transient error
           setUser(null);
         }
       } catch (error) {
         console.error('Error fetching user:', error);
-        localStorage.removeItem('tms_token');
+        // Do not remove token on transient/network errors
         setUser(null);
       } finally {
         setLoading(false);
