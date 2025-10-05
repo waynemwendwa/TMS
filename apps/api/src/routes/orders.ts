@@ -37,7 +37,9 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
       ];
     }
 
-    const orders = await prisma.order.findMany({
+    // Check if Order model exists in database
+    try {
+      const orders = await prisma.order.findMany({
       where,
       include: {
         project: {
@@ -63,8 +65,21 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
       orderBy: { createdAt: 'desc' }
     });
 
-    Logger.logBusiness('Orders fetched', { count: orders.length, userRole: user.role });
-    res.json(orders);
+      Logger.logBusiness('Orders fetched', { count: orders.length, userRole: user.role });
+      res.json(orders);
+    } catch (dbError: any) {
+      // Check if it's a database schema issue
+      if (dbError.message && dbError.message.includes('relation "orders" does not exist')) {
+        Logger.logError(dbError as Error, 'fetchOrders - Database schema not migrated');
+        res.status(503).json({ 
+          error: 'Orders feature not available yet', 
+          message: 'Database migration is required. Please contact administrator.',
+          code: 'SCHEMA_MIGRATION_REQUIRED'
+        });
+        return;
+      }
+      throw dbError; // Re-throw if it's not a schema issue
+    }
   } catch (error) {
     Logger.logError(error as Error, 'fetchOrders');
     res.status(500).json({ error: 'Failed to fetch orders' });

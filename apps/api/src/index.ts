@@ -68,6 +68,35 @@ app.use('/api', health);
 app.use('/api/auth', auth);
 app.use('/api/inventory', inventory);
 app.use('/api/projects', projects);
+// Orders health check (public endpoint)
+app.get('/api/orders/health', async (req, res) => {
+  try {
+    // Try to access the orders table to check if migration is applied
+    await prisma.order.findFirst();
+    res.json({ 
+      status: 'healthy', 
+      message: 'Orders feature is available',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error: any) {
+    if (error.message && error.message.includes('relation "orders" does not exist')) {
+      res.status(503).json({ 
+        status: 'unavailable', 
+        message: 'Orders feature not available - database migration required',
+        code: 'SCHEMA_MIGRATION_REQUIRED',
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.status(500).json({ 
+        status: 'error', 
+        message: 'Orders feature error',
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+});
+
 app.use('/api/orders', orders);
 app.use('/api/upload', upload);
 
