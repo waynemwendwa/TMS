@@ -74,9 +74,10 @@ export class Logger {
     }
 
     const message = `${method} ${url} ${status} ${responseTime ? `(${responseTime}ms)` : ''}`;
+    // Only include minimal, non-sensitive request metadata
     const meta = {
-      ip,
-      userAgent: userAgent.substring(0, 100), // Truncate long user agents
+      ip: process.env.NODE_ENV === 'production' ? undefined : ip,
+      userAgent: process.env.NODE_ENV === 'production' ? undefined : userAgent.substring(0, 60),
       contentLength: res.get('Content-Length') || 0
     };
 
