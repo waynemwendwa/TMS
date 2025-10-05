@@ -117,6 +117,18 @@ app.listen(port, host, async () => {
 		const userCount = await prisma.user.count();
 		Logger.info(`📊 Database tables verified - Users table exists (${userCount} users)`);
 		
+		// Orders table and migration diagnostics
+		try {
+			const [{ exists } = { exists: null }]: Array<{ exists: string | null } | undefined> = await prisma.$queryRaw`SELECT to_regclass('public.orders') as exists`;
+			const [{ count } = { count: 0 }]: Array<{ count: bigint } | undefined> = await prisma.$queryRaw`SELECT COUNT(*)::bigint AS count FROM "_prisma_migrations" WHERE migration_name LIKE '%add_approval_workflow%'`;
+			Logger.info('🧪 Orders diagnostics', {
+				ordersTableExists: Boolean(exists),
+				approvalWorkflowMigrationCount: Number(count || 0)
+			});
+		} catch (diagError) {
+			Logger.warn('⚠️ Orders diagnostics failed', { error: diagError instanceof Error ? diagError.message : 'Unknown error' });
+		}
+		
 		// Test if FINANCE_PROCUREMENT role is available (without creating a user)
 		try {
 			// Just test if the enum value is valid by checking the schema
