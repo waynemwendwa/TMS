@@ -85,12 +85,15 @@ export default function OrderDetailPage() {
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
-      } else {
+      } else if (response.status === 401) {
         router.push('/auth/login');
+      } else {
+        // Non-auth error: keep user state as-is and allow page to show errors
+        console.error('Auth check failed with status:', response.status);
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
-      router.push('/auth/login');
+      // Do not redirect on transient/network errors; allow refresh to recover
     }
   }, [router]);
 
