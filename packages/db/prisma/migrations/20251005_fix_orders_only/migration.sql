@@ -142,62 +142,62 @@ EXCEPTION WHEN others THEN NULL; END $$;
 -- Foreign keys (guarded against duplicates)
 DO $$ BEGIN
   ALTER TABLE "public"."orders"
-    ADD CONSTRAINT IF NOT EXISTS "orders_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."projects"("id") ON DELETE CASCADE;
+    ADD CONSTRAINT "orders_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."projects"("id") ON DELETE CASCADE;
 EXCEPTION WHEN others THEN NULL; END $$;
 
 DO $$ BEGIN
   ALTER TABLE "public"."orders"
-    ADD CONSTRAINT IF NOT EXISTS "orders_requestedById_fkey" FOREIGN KEY ("requestedById") REFERENCES "public"."users"("id") ON DELETE NO ACTION;
+    ADD CONSTRAINT "orders_requestedById_fkey" FOREIGN KEY ("requestedById") REFERENCES "public"."users"("id") ON DELETE NO ACTION;
 EXCEPTION WHEN others THEN NULL; END $$;
 
 DO $$ BEGIN
   ALTER TABLE "public"."orders"
-    ADD CONSTRAINT IF NOT EXISTS "orders_inventoryId_fkey" FOREIGN KEY ("inventoryId") REFERENCES "public"."inventory"("id") ON DELETE SET NULL;
+    ADD CONSTRAINT "orders_inventoryId_fkey" FOREIGN KEY ("inventoryId") REFERENCES "public"."inventory"("id") ON DELETE SET NULL;
 EXCEPTION WHEN others THEN NULL; END $$;
 
 DO $$ BEGIN
   ALTER TABLE "public"."orders"
-    ADD CONSTRAINT IF NOT EXISTS "orders_procApprovedBy_fkey" FOREIGN KEY ("procurementApprovedBy") REFERENCES "public"."users"("id") ON DELETE SET NULL;
+    ADD CONSTRAINT "orders_procApprovedBy_fkey" FOREIGN KEY ("procurementApprovedBy") REFERENCES "public"."users"("id") ON DELETE SET NULL;
 EXCEPTION WHEN others THEN NULL; END $$;
 
 DO $$ BEGIN
   ALTER TABLE "public"."orders"
-    ADD CONSTRAINT IF NOT EXISTS "orders_chairmanApprovedBy_fkey" FOREIGN KEY ("chairmanApprovedBy") REFERENCES "public"."users"("id") ON DELETE SET NULL;
+    ADD CONSTRAINT "orders_chairmanApprovedBy_fkey" FOREIGN KEY ("chairmanApprovedBy") REFERENCES "public"."users"("id") ON DELETE SET NULL;
 EXCEPTION WHEN others THEN NULL; END $$;
 
 DO $$ BEGIN
   ALTER TABLE "public"."orders"
-    ADD CONSTRAINT IF NOT EXISTS "orders_procSourcedBy_fkey" FOREIGN KEY ("procurementSourcedBy") REFERENCES "public"."users"("id") ON DELETE SET NULL;
+    ADD CONSTRAINT "orders_procSourcedBy_fkey" FOREIGN KEY ("procurementSourcedBy") REFERENCES "public"."users"("id") ON DELETE SET NULL;
 EXCEPTION WHEN others THEN NULL; END $$;
 
 DO $$ BEGIN
   ALTER TABLE "public"."order_items"
-    ADD CONSTRAINT IF NOT EXISTS "order_items_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "public"."orders"("id") ON DELETE CASCADE;
+    ADD CONSTRAINT "order_items_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "public"."orders"("id") ON DELETE CASCADE;
 EXCEPTION WHEN others THEN NULL; END $$;
 
 DO $$ BEGIN
   ALTER TABLE "public"."deliveries"
-    ADD CONSTRAINT IF NOT EXISTS "deliveries_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "public"."orders"("id") ON DELETE CASCADE;
+    ADD CONSTRAINT "deliveries_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "public"."orders"("id") ON DELETE CASCADE;
 EXCEPTION WHEN others THEN NULL; END $$;
 
 DO $$ BEGIN
   ALTER TABLE "public"."deliveries"
-    ADD CONSTRAINT IF NOT EXISTS "deliveries_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "public"."suppliers"("id") ON DELETE RESTRICT;
+    ADD CONSTRAINT "deliveries_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "public"."suppliers"("id") ON DELETE RESTRICT;
 EXCEPTION WHEN others THEN NULL; END $$;
 
 DO $$ BEGIN
   ALTER TABLE "public"."delivery_documents"
-    ADD CONSTRAINT IF NOT EXISTS "delivery_documents_deliveryId_fkey" FOREIGN KEY ("deliveryId") REFERENCES "public"."deliveries"("id") ON DELETE CASCADE;
+    ADD CONSTRAINT "delivery_documents_deliveryId_fkey" FOREIGN KEY ("deliveryId") REFERENCES "public"."deliveries"("id") ON DELETE CASCADE;
 EXCEPTION WHEN others THEN NULL; END $$;
 
 DO $$ BEGIN
   ALTER TABLE "public"."quotes"
-    ADD CONSTRAINT IF NOT EXISTS "quotes_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "public"."suppliers"("id") ON DELETE RESTRICT;
+    ADD CONSTRAINT "quotes_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "public"."suppliers"("id") ON DELETE RESTRICT;
 EXCEPTION WHEN others THEN NULL; END $$;
 
 DO $$ BEGIN
   ALTER TABLE "public"."quote_items"
-    ADD CONSTRAINT IF NOT EXISTS "quote_items_quoteId_fkey" FOREIGN KEY ("quoteId") REFERENCES "public"."quotes"("id") ON DELETE CASCADE;
+    ADD CONSTRAINT "quote_items_quoteId_fkey" FOREIGN KEY ("quoteId") REFERENCES "public"."quotes"("id") ON DELETE CASCADE;
 EXCEPTION WHEN others THEN NULL; END $$;
 
 

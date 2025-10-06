@@ -461,77 +461,127 @@ DO $$ BEGIN
 EXCEPTION WHEN others THEN NULL; END $$;
 
 -- AddForeignKey
-ALTER TABLE "public"."project_documents" ADD CONSTRAINT "project_documents_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "public"."project_documents" ADD CONSTRAINT "project_documents_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN others THEN NULL; END $$;
 
 -- AddForeignKey
-ALTER TABLE "public"."project_documents" ADD CONSTRAINT "project_documents_uploadedBy_fkey" FOREIGN KEY ("uploadedBy") REFERENCES "public"."users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "public"."project_documents" ADD CONSTRAINT "project_documents_uploadedBy_fkey" FOREIGN KEY ("uploadedBy") REFERENCES "public"."users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN others THEN NULL; END $$;
 
 -- AddForeignKey
-ALTER TABLE "public"."project_stakeholders" ADD CONSTRAINT "project_stakeholders_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "public"."project_stakeholders" ADD CONSTRAINT "project_stakeholders_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN others THEN NULL; END $$;
 
 -- AddForeignKey
-ALTER TABLE "public"."procurement_items" ADD CONSTRAINT "procurement_items_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "public"."procurement_items" ADD CONSTRAINT "procurement_items_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN others THEN NULL; END $$;
 
 -- AddForeignKey
-ALTER TABLE "public"."project_phases" ADD CONSTRAINT "project_phases_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "public"."project_phases" ADD CONSTRAINT "project_phases_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN others THEN NULL; END $$;
 
 -- AddForeignKey
-ALTER TABLE "public"."boq_templates" ADD CONSTRAINT "boq_templates_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "public"."boq_templates" ADD CONSTRAINT "boq_templates_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN others THEN NULL; END $$;
 
 -- AddForeignKey
-ALTER TABLE "public"."boq_templates" ADD CONSTRAINT "boq_templates_createdBy_fkey" FOREIGN KEY ("createdBy") REFERENCES "public"."users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "public"."boq_templates" ADD CONSTRAINT "boq_templates_createdBy_fkey" FOREIGN KEY ("createdBy") REFERENCES "public"."users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN others THEN NULL; END $$;
 
 -- AddForeignKey
-ALTER TABLE "public"."boq_template_items" ADD CONSTRAINT "boq_template_items_boqTemplateId_fkey" FOREIGN KEY ("boqTemplateId") REFERENCES "public"."boq_templates"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "public"."boq_template_items" ADD CONSTRAINT "boq_template_items_boqTemplateId_fkey" FOREIGN KEY ("boqTemplateId") REFERENCES "public"."boq_templates"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN others THEN NULL; END $$;
 
 -- AddForeignKey
-ALTER TABLE "public"."site_supervisor_assignments" ADD CONSTRAINT "site_supervisor_assignments_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "public"."site_supervisor_assignments" ADD CONSTRAINT "site_supervisor_assignments_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN others THEN NULL; END $$;
 
 -- AddForeignKey
-ALTER TABLE "public"."site_supervisor_assignments" ADD CONSTRAINT "site_supervisor_assignments_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "public"."site_supervisor_assignments" ADD CONSTRAINT "site_supervisor_assignments_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN others THEN NULL; END $$;
 
 -- AddForeignKey
-ALTER TABLE "public"."order_templates" ADD CONSTRAINT "order_templates_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "public"."order_templates" ADD CONSTRAINT "order_templates_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN others THEN NULL; END $$;
 
 -- AddForeignKey
-ALTER TABLE "public"."order_templates" ADD CONSTRAINT "order_templates_createdBy_fkey" FOREIGN KEY ("createdBy") REFERENCES "public"."users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "public"."order_templates" ADD CONSTRAINT "order_templates_createdBy_fkey" FOREIGN KEY ("createdBy") REFERENCES "public"."users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN others THEN NULL; END $$;
 
 -- AddForeignKey
-ALTER TABLE "public"."order_template_items" ADD CONSTRAINT "order_template_items_orderTemplateId_fkey" FOREIGN KEY ("orderTemplateId") REFERENCES "public"."order_templates"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "public"."order_template_items" ADD CONSTRAINT "order_template_items_orderTemplateId_fkey" FOREIGN KEY ("orderTemplateId") REFERENCES "public"."order_templates"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN others THEN NULL; END $$;
 
 -- AddForeignKey
-ALTER TABLE "public"."orders" ADD CONSTRAINT "orders_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "public"."orders" ADD CONSTRAINT "orders_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN others THEN NULL; END $$;
 
 -- AddForeignKey
-ALTER TABLE "public"."orders" ADD CONSTRAINT "orders_requestedById_fkey" FOREIGN KEY ("requestedById") REFERENCES "public"."users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "public"."orders" ADD CONSTRAINT "orders_requestedById_fkey" FOREIGN KEY ("requestedById") REFERENCES "public"."users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN others THEN NULL; END $$;
 
 -- AddForeignKey
-ALTER TABLE "public"."orders" ADD CONSTRAINT "orders_inventoryId_fkey" FOREIGN KEY ("inventoryId") REFERENCES "public"."inventory"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "public"."orders" ADD CONSTRAINT "orders_inventoryId_fkey" FOREIGN KEY ("inventoryId") REFERENCES "public"."inventory"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN others THEN NULL; END $$;
 
 -- AddForeignKey
-ALTER TABLE "public"."orders" ADD CONSTRAINT "orders_procurementApprovedBy_fkey" FOREIGN KEY ("procurementApprovedBy") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "public"."orders" ADD CONSTRAINT "orders_procurementApprovedBy_fkey" FOREIGN KEY ("procurementApprovedBy") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN others THEN NULL; END $$;
 
 -- AddForeignKey
-ALTER TABLE "public"."orders" ADD CONSTRAINT "orders_chairmanApprovedBy_fkey" FOREIGN KEY ("chairmanApprovedBy") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "public"."orders" ADD CONSTRAINT "orders_chairmanApprovedBy_fkey" FOREIGN KEY ("chairmanApprovedBy") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN others THEN NULL; END $$;
 
 -- AddForeignKey
-ALTER TABLE "public"."orders" ADD CONSTRAINT "orders_procurementSourcedBy_fkey" FOREIGN KEY ("procurementSourcedBy") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "public"."orders" ADD CONSTRAINT "orders_procurementSourcedBy_fkey" FOREIGN KEY ("procurementSourcedBy") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN others THEN NULL; END $$;
 
 -- AddForeignKey
-ALTER TABLE "public"."order_items" ADD CONSTRAINT "order_items_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "public"."orders"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "public"."order_items" ADD CONSTRAINT "order_items_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "public"."orders"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN others THEN NULL; END $$;
 
 -- AddForeignKey
-ALTER TABLE "public"."deliveries" ADD CONSTRAINT "deliveries_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "public"."orders"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "public"."deliveries" ADD CONSTRAINT "deliveries_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "public"."orders"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN others THEN NULL; END $$;
 
 -- AddForeignKey
-ALTER TABLE "public"."deliveries" ADD CONSTRAINT "deliveries_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "public"."suppliers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "public"."deliveries" ADD CONSTRAINT "deliveries_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "public"."suppliers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN others THEN NULL; END $$;
 
 -- AddForeignKey
-ALTER TABLE "public"."delivery_documents" ADD CONSTRAINT "delivery_documents_deliveryId_fkey" FOREIGN KEY ("deliveryId") REFERENCES "public"."deliveries"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "public"."delivery_documents" ADD CONSTRAINT "delivery_documents_deliveryId_fkey" FOREIGN KEY ("deliveryId") REFERENCES "public"."deliveries"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN others THEN NULL; END $$;
 
 -- AddForeignKey
-ALTER TABLE "public"."quotes" ADD CONSTRAINT "quotes_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "public"."suppliers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "public"."quotes" ADD CONSTRAINT "quotes_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "public"."suppliers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN others THEN NULL; END $$;
 
 -- AddForeignKey
-ALTER TABLE "public"."quote_items" ADD CONSTRAINT "quote_items_quoteId_fkey" FOREIGN KEY ("quoteId") REFERENCES "public"."quotes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "public"."quote_items" ADD CONSTRAINT "quote_items_quoteId_fkey" FOREIGN KEY ("quoteId") REFERENCES "public"."quotes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN others THEN NULL; END $$;
 
