@@ -86,7 +86,7 @@ DO $$ BEGIN
 END $$;
 
 -- CreateTable
-CREATE TABLE "public"."users" (
+CREATE TABLE IF NOT EXISTS "public"."users" (
     "id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -101,7 +101,7 @@ CREATE TABLE "public"."users" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."inventory" (
+CREATE TABLE IF NOT EXISTS "public"."inventory" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
@@ -119,7 +119,7 @@ CREATE TABLE "public"."inventory" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."inventory_logs" (
+CREATE TABLE IF NOT EXISTS "public"."inventory_logs" (
     "id" TEXT NOT NULL,
     "type" "public"."InventoryLogType" NOT NULL,
     "quantity" INTEGER NOT NULL,
@@ -135,7 +135,7 @@ CREATE TABLE "public"."inventory_logs" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."office_documents" (
+CREATE TABLE IF NOT EXISTS "public"."office_documents" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
@@ -154,7 +154,7 @@ CREATE TABLE "public"."office_documents" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."projects" (
+CREATE TABLE IF NOT EXISTS "public"."projects" (
     "id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "description" TEXT,
@@ -170,7 +170,7 @@ CREATE TABLE "public"."projects" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."project_documents" (
+CREATE TABLE IF NOT EXISTS "public"."project_documents" (
     "id" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -190,7 +190,7 @@ CREATE TABLE "public"."project_documents" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."project_stakeholders" (
+CREATE TABLE IF NOT EXISTS "public"."project_stakeholders" (
     "id" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -205,7 +205,7 @@ CREATE TABLE "public"."project_stakeholders" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."procurement_items" (
+CREATE TABLE IF NOT EXISTS "public"."procurement_items" (
     "id" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
     "itemName" TEXT NOT NULL,
@@ -223,7 +223,7 @@ CREATE TABLE "public"."procurement_items" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."project_phases" (
+CREATE TABLE IF NOT EXISTS "public"."project_phases" (
     "id" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
     "phaseName" TEXT NOT NULL,
@@ -241,7 +241,7 @@ CREATE TABLE "public"."project_phases" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."boq_templates" (
+CREATE TABLE IF NOT EXISTS "public"."boq_templates" (
     "id" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
     "title" TEXT NOT NULL,
@@ -255,7 +255,7 @@ CREATE TABLE "public"."boq_templates" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."boq_template_items" (
+CREATE TABLE IF NOT EXISTS "public"."boq_template_items" (
     "id" TEXT NOT NULL,
     "boqTemplateId" TEXT NOT NULL,
     "item" TEXT NOT NULL,
@@ -271,7 +271,7 @@ CREATE TABLE "public"."boq_template_items" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."site_supervisor_assignments" (
+CREATE TABLE IF NOT EXISTS "public"."site_supervisor_assignments" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
@@ -281,7 +281,7 @@ CREATE TABLE "public"."site_supervisor_assignments" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."order_templates" (
+CREATE TABLE IF NOT EXISTS "public"."order_templates" (
     "id" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
     "title" TEXT NOT NULL,
@@ -294,7 +294,7 @@ CREATE TABLE "public"."order_templates" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."order_template_items" (
+CREATE TABLE IF NOT EXISTS "public"."order_template_items" (
     "id" TEXT NOT NULL,
     "orderTemplateId" TEXT NOT NULL,
     "item" TEXT NOT NULL,
@@ -310,7 +310,7 @@ CREATE TABLE "public"."order_template_items" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."orders" (
+CREATE TABLE IF NOT EXISTS "public"."orders" (
     "id" TEXT NOT NULL,
     "orderNumber" TEXT NOT NULL,
     "title" TEXT NOT NULL,
@@ -336,7 +336,7 @@ CREATE TABLE "public"."orders" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."order_items" (
+CREATE TABLE IF NOT EXISTS "public"."order_items" (
     "id" TEXT NOT NULL,
     "itemCode" TEXT NOT NULL,
     "description" TEXT NOT NULL,
@@ -353,7 +353,7 @@ CREATE TABLE "public"."order_items" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."deliveries" (
+CREATE TABLE IF NOT EXISTS "public"."deliveries" (
     "id" TEXT NOT NULL,
     "deliveryNumber" TEXT NOT NULL,
     "orderId" TEXT NOT NULL,
@@ -369,7 +369,7 @@ CREATE TABLE "public"."deliveries" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."delivery_documents" (
+CREATE TABLE IF NOT EXISTS "public"."delivery_documents" (
     "id" TEXT NOT NULL,
     "deliveryId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -383,7 +383,7 @@ CREATE TABLE "public"."delivery_documents" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."suppliers" (
+CREATE TABLE IF NOT EXISTS "public"."suppliers" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "email" TEXT,
@@ -397,7 +397,7 @@ CREATE TABLE "public"."suppliers" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."quotes" (
+CREATE TABLE IF NOT EXISTS "public"."quotes" (
     "id" TEXT NOT NULL,
     "quoteNumber" TEXT NOT NULL,
     "title" TEXT NOT NULL,
@@ -414,7 +414,7 @@ CREATE TABLE "public"."quotes" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."quote_items" (
+CREATE TABLE IF NOT EXISTS "public"."quote_items" (
     "id" TEXT NOT NULL,
     "itemCode" TEXT NOT NULL,
     "description" TEXT NOT NULL,
@@ -430,29 +430,35 @@ CREATE TABLE "public"."quote_items" (
     CONSTRAINT "quote_items_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
-CREATE UNIQUE INDEX "users_email_key" ON "public"."users"("email");
+-- CreateIndex (guarded)
+CREATE UNIQUE INDEX IF NOT EXISTS "users_email_key" ON "public"."users"("email");
 
--- CreateIndex
-CREATE UNIQUE INDEX "site_supervisor_assignments_userId_key" ON "public"."site_supervisor_assignments"("userId");
+-- CreateIndex (guarded)
+CREATE UNIQUE INDEX IF NOT EXISTS "site_supervisor_assignments_userId_key" ON "public"."site_supervisor_assignments"("userId");
 
--- CreateIndex
-CREATE UNIQUE INDEX "orders_orderNumber_key" ON "public"."orders"("orderNumber");
+-- CreateIndex (guarded)
+CREATE UNIQUE INDEX IF NOT EXISTS "orders_orderNumber_key" ON "public"."orders"("orderNumber");
 
--- CreateIndex
-CREATE UNIQUE INDEX "deliveries_deliveryNumber_key" ON "public"."deliveries"("deliveryNumber");
+-- CreateIndex (guarded)
+CREATE UNIQUE INDEX IF NOT EXISTS "deliveries_deliveryNumber_key" ON "public"."deliveries"("deliveryNumber");
 
--- CreateIndex
-CREATE UNIQUE INDEX "quotes_quoteNumber_key" ON "public"."quotes"("quoteNumber");
-
--- AddForeignKey
-ALTER TABLE "public"."inventory_logs" ADD CONSTRAINT "inventory_logs_inventoryId_fkey" FOREIGN KEY ("inventoryId") REFERENCES "public"."inventory"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+-- CreateIndex (guarded)
+CREATE UNIQUE INDEX IF NOT EXISTS "quotes_quoteNumber_key" ON "public"."quotes"("quoteNumber");
 
 -- AddForeignKey
-ALTER TABLE "public"."inventory_logs" ADD CONSTRAINT "inventory_logs_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "public"."inventory_logs" ADD CONSTRAINT "inventory_logs_inventoryId_fkey" FOREIGN KEY ("inventoryId") REFERENCES "public"."inventory"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN others THEN NULL; END $$;
 
 -- AddForeignKey
-ALTER TABLE "public"."projects" ADD CONSTRAINT "projects_createdBy_fkey" FOREIGN KEY ("createdBy") REFERENCES "public"."users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "public"."inventory_logs" ADD CONSTRAINT "inventory_logs_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN others THEN NULL; END $$;
+
+-- AddForeignKey
+DO $$ BEGIN
+  ALTER TABLE "public"."projects" ADD CONSTRAINT "projects_createdBy_fkey" FOREIGN KEY ("createdBy") REFERENCES "public"."users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN others THEN NULL; END $$;
 
 -- AddForeignKey
 ALTER TABLE "public"."project_documents" ADD CONSTRAINT "project_documents_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "public"."projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
