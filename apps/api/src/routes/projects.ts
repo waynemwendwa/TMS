@@ -436,7 +436,7 @@ router.get('/:id/documents', requireAuth, async (req: Request, res: Response) =>
   }
 });
 
-// Upload project documents (preliminary or BOQ)
+// Upload project documents (preliminary, BOQ, order, payment, drawing)
 router.post('/:id/documents', requireAuth, projectUpload.array('documents', 10), async (req: Request, res: Response) => {
   try {
     console.log('📤 Project document upload request received');
@@ -452,7 +452,7 @@ router.post('/:id/documents', requireAuth, projectUpload.array('documents', 10),
       category?: string;
       name?: string;
       description?: string;
-      documentType?: string; // "preliminary" | "boq" | "order"
+      documentType?: string; // "preliminary" | "boq" | "order" | "payment" | "drawing"
     };
 
     const files = req.files as Express.Multer.File[] | undefined;
@@ -463,8 +463,26 @@ router.post('/:id/documents', requireAuth, projectUpload.array('documents', 10),
 
     if (!documentType) {
       console.log('❌ Missing documentType');
-      return res.status(400).json({ error: 'documentType is required (preliminary|boq)' });
+      return res.status(400).json({ error: 'documentType is required (preliminary|boq|order|payment|drawing)' });
     }
+
+    const allowedDocumentTypes = new Set(['preliminary', 'boq', 'order', 'payment', 'drawing']);
+    if (!allowedDocumentTypes.has(String(documentType).toLowerCase())) {
+      console.log('❌ Invalid documentType:', documentType);
+      return res.status(400).json({ error: 'Invalid documentType. Allowed: preliminary, boq, order, payment, drawing' });
+    }
+
+    // Sanitize category to match enum ProjectDocumentCategory; fallback to OTHER
+    const allowedProjectDocumentCategories = new Set([
+      'LETTER_OF_AWARD',
+      'ACCEPTANCE_OF_AWARD',
+      'PERFORMANCE_BOND',
+      'CONTRACT_SIGNING',
+      'BOQ_DOCUMENT',
+      'SAMPLE_APPROVAL',
+      'OTHER'
+    ]);
+    const safeCategory = category && allowedProjectDocumentCategories.has(category) ? category : 'OTHER';
 
     const uploaded: any[] = [];
     for (const file of files) {
@@ -527,7 +545,7 @@ router.post('/:id/documents', requireAuth, projectUpload.array('documents', 10),
           projectId: id,
           name: name || file.originalname,
           description: description || '',
-          category: (category as any) || 'OTHER',
+          category: safeCategory as any,
           type: path.extname(file.originalname).toLowerCase().substring(1).toUpperCase() as any,
           size: file.size,
           url: fileUrl,
@@ -550,6 +568,7 @@ router.post('/:id/documents', requireAuth, projectUpload.array('documents', 10),
 });
 
 // Delete a project document
+// Compatibility route (old path without project id)
 router.delete('/documents/:docId', requireAuth, async (req: Request, res: Response) => {
   try {
     const { docId } = req.params;
@@ -613,6 +632,79 @@ router.delete('/documents/:docId', requireAuth, async (req: Request, res: Respon
     await prisma.projectDocument.delete({ where: { id: docId } });
     console.log('✅ Database record deleted');
 
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Error deleting project document:', error);
+    res.status(500).json({ error: 'Failed to delete project document' });
+  }
+});
+
+// Preferred route including project id to match frontend requests
+router.delete('/:id/documents/:docId', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { id, docId } = req.params;
+    console.log('🗑️ Delete request for project document:', { projectId: id, docId });
+
+    const doc = await prisma.projectDocument.findUnique({ where: { id: docId } });
+    if (!doc) {
+      console.log('❌ Document not found for ID:', docId);
+      return res.status(404).json({ error: 'Document not found' });
+    }
+    if (doc.projectId !== id) {
+      console.log('❌ Document does not belong to project:', { docProjectId: doc.projectId, id });
+      return res.status(404).json({ error: 'Document not found in this project' });
+    }
+
+    if (req.user?.role === 'SITE_SUPERVISOR') {
+      const assignment = await prisma.siteSupervisorAssignment.findUnique({ where: { userId: req.user.id } });
+      if (!assignment || assignment.projectId !== id) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    }
+
+    // Delete physical file first
+    if (isGCSEnabled && storageClient && doc.filePath) {
+      console.log('☁️ Deleting from Google Cloud Storage');
+      const bucket = storageClient.bucket(GOOGLE_CLOUD_BUCKET_NAME!);
+      const file = bucket.file(doc.filePath);
+      try {
+        await file.delete();
+        console.log('✅ GCS file deleted');
+      } catch (gcsErr) {
+        console.warn('⚠️ GCS delete warning (continuing):', gcsErr);
+      }
+    } else if (doc.filePath) {
+      console.log('💾 Deleting from local storage');
+      let absolutePath = path.isAbsolute(doc.filePath)
+        ? doc.filePath
+        : path.join(process.cwd(), doc.filePath);
+      if (!fs.existsSync(absolutePath)) {
+        const renderRoot = '/opt/render/project/src';
+        const apiRoot = path.join(renderRoot, 'apps', 'api');
+        if (doc.filePath.startsWith(renderRoot)) {
+          const relFromApiRoot = path.relative(apiRoot, doc.filePath);
+          if (!relFromApiRoot.startsWith('..')) {
+            const altPath = path.join(process.cwd(), relFromApiRoot);
+            if (fs.existsSync(altPath)) {
+              absolutePath = altPath;
+            }
+          }
+        }
+      }
+      if (fs.existsSync(absolutePath)) {
+        try {
+          fs.unlinkSync(absolutePath);
+          console.log('✅ Local file deleted');
+        } catch (fsErr) {
+          console.warn('⚠️ Local delete warning (continuing):', fsErr);
+        }
+      } else {
+        console.warn('⚠️ Local file not found at delete time:', absolutePath);
+      }
+    }
+
+    await prisma.projectDocument.delete({ where: { id: docId } });
+    console.log('✅ Database record deleted');
     res.status(200).json({ success: true });
   } catch (error) {
     console.error('Error deleting project document:', error);

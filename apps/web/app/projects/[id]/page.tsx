@@ -1418,7 +1418,7 @@ export default function ProjectDetailsPage() {
                 multiple
                 accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx"
                 onChange={(e) => setFiles(e.target.files)}
-                className="w-full text-gray-900"
+                className="w-full bg-gray-50 text-gray-900 border border-gray-300 rounded px-3 py-2"
               />
             </div>
             <button
@@ -1485,7 +1485,7 @@ export default function ProjectDetailsPage() {
           <form onSubmit={onUploadBOQ} className="space-y-3">
             <div>
               <label className="block text-sm text-gray-700 mb-1">Files</label>
-              <input type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={(e) => setBoqFiles(e.target.files)} className="w-full text-gray-900"/>
+              <input type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={(e) => setBoqFiles(e.target.files)} className="w-full bg-gray-50 text-gray-900 border border-gray-300 rounded px-3 py-2"/>
             </div>
             {boqError && <div className="text-sm text-red-600">{boqError}</div>}
             {boqSuccess && <div className="text-sm text-green-700">{boqSuccess}</div>}
@@ -1779,7 +1779,7 @@ export default function ProjectDetailsPage() {
           <form onSubmit={onUploadOrderDoc} className="space-y-3">
             <div>
               <label className="block text-sm text-gray-700 mb-1">Files</label>
-              <input type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={(e) => setOrderFiles(e.target.files)} className="w-full text-gray-900"/>
+              <input type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={(e) => setOrderFiles(e.target.files)} className="w-full bg-gray-50 text-gray-900 border border-gray-300 rounded px-3 py-2"/>
             </div>
             <button type="submit" disabled={orderUploading || !orderFiles || orderFiles.length === 0} className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors disabled:opacity-60" aria-busy={orderUploading}>
               {orderUploading ? 'Uploading...' : 'Upload Order'}
@@ -2172,7 +2172,7 @@ export default function ProjectDetailsPage() {
                 multiple
                 accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx"
                 onChange={(e) => setPaymentFiles(e.target.files)}
-                className="w-full text-gray-900"
+                className="w-full bg-gray-50 text-gray-900 border border-gray-300 rounded px-3 py-2"
               />
             </div>
             <button
@@ -2265,7 +2265,7 @@ export default function ProjectDetailsPage() {
                 multiple
                 accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx"
                 onChange={(e) => setDrawingFiles(e.target.files)}
-                className="w-full text-gray-900"
+                className="w-full bg-gray-50 text-gray-900 border border-gray-300 rounded px-3 py-2"
               />
             </div>
             <button
