@@ -27,7 +27,7 @@ export default function RootLayout({
                 {/* Logo/Brand */}
                 <div className="flex items-center">
                   <Link href="/" className="text-2xl font-bold text-blue-600 hover:text-blue-700 transition-colors">
-                    <Image
+                    <Imagefdfd
                       src="/logo.png"
                       alt="CECL Logo"
                       className="h-10 w-auto"
